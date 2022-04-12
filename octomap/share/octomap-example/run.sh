@@ -1,0 +1,2 @@
+make
+./graph2tree

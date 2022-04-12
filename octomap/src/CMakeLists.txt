@@ -8,6 +8,9 @@ SET (octomap_SRCS
   OcTreeNode.cpp
   OcTreeStamped.cpp
   ColorOcTree.cpp
+  GlobalVariables_Cache.cpp
+  GlobalVariables_Octomap.cpp
+  Param.cpp
   )
 
 # dynamic and static libs, see CMake FAQ:

@@ -59,6 +59,10 @@ namespace octomap {
      */
     OcTree(std::string _filename);
 
+    void test() {
+      printf("The OcTree is responding");
+    }
+
     virtual ~OcTree(){};
 
     /// virtual constructor: creates a new object of same type

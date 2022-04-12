@@ -33,6 +33,8 @@
 
 #include <bitset>
 #include <algorithm>
+#include "GlobalVariables_Cache.h"
+#include "Cache.h"
 
 #include <octomap/MCTables.h>
 
@@ -91,6 +93,11 @@ namespace octomap {
       computeDiscreteUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
     else
       computeUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
+
+#ifdef USE_CACHE
+    pointCloudCount++;
+    return;
+#endif
 
     // insert data into tree  -----------------------
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
@@ -252,6 +259,23 @@ namespace octomap {
       } // end bbx case
 
     } // end for all points, end of parallel OMP loop
+
+#ifdef USE_CACHE
+    int count = 0;
+    // std::cout << free_cells.size() << std::endl;
+    for(KeySet::iterator it = free_cells.begin(), end=free_cells.end(); it!= end; ){
+      myHashMap.put(*it, 0);
+      count++;
+      ++it;
+    }
+    count = 0;
+    for(KeySet::iterator it = occupied_cells.begin(), end=occupied_cells.end(); it!= end; ){
+      myHashMap.put(*it, 1);
+      count++;
+      ++it;
+    }
+    return;
+#endif
 
     // prefer occupied cells over free ones (and make sets disjunct)
     for(KeySet::iterator it = free_cells.begin(), end=free_cells.end(); it!= end; ){
