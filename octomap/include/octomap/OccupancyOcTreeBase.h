@@ -43,6 +43,7 @@
 #include "octomap_utils.h"
 #include "OcTreeBaseImpl.h"
 #include "AbstractOccupancyOcTree.h"
+#include "Cache.h"
 
 
 namespace octomap {
@@ -93,6 +94,10 @@ namespace octomap {
     * @param discretize whether the scan is discretized first into octree key cells (default: false).
     *   This reduces the number of raycasts using computeDiscreteUpdate(), resulting in a potential speedup.*
     */
+    virtual void insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin, Cache* myCache,
+                   double maxrange=-1., bool lazy_eval = false, bool discretize = false);
+
+    // the original function
     virtual void insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin,
                    double maxrange=-1., bool lazy_eval = false, bool discretize = false);
 
@@ -380,6 +385,12 @@ namespace octomap {
      * @param occupied_cells keys of nodes to be marked occupied
      * @param maxrange maximum range for raycasting (-1: unlimited)
      */
+    void computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
+                       KeySet& free_cells,
+                       KeySet& occupied_cells,
+                       double maxrange, Cache* myCache);
+
+    // the original function
     void computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
                        KeySet& free_cells,
                        KeySet& occupied_cells,

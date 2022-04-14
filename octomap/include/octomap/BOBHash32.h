@@ -35,11 +35,13 @@ public:
 	uint32_t run(const char * str, uint32_t len)
 	{
 		//register ub4 a,b,c,len;
+		
 		uint32_t a,b,c;
 	//	uint32_t initval = 0;
 		/* Set up the internal state */
 		//len = length;
 		a = b = 0x9e3779b9;  /* the golden ratio; an arbitrary value */
+		// cout << this->prime32Num << endl; 
 		c = prime32[this->prime32Num];         /* the previous hash value */
 		/*---------------------------------------- handle most of the key */
 		while (len >= 12)

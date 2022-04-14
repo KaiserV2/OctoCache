@@ -4,8 +4,9 @@
 #include <stdint.h>
 
 #define USE_CACHE true
+// #define DETAIL_LOG true
 
-const int TABLE_SIZE = 10000000;
+const int TABLE_SIZE = 20;
 #define SEED 19991228
 
 #define MAX_PRIME32 1229

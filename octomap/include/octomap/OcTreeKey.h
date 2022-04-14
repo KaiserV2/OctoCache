@@ -38,6 +38,8 @@
  * but it can be used to determine the c++ standard library implementation.
  */
 #include <ciso646>
+#include <stdint.h>
+#include <vector>
 
 #include <assert.h>
 

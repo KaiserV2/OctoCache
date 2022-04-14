@@ -33,8 +33,8 @@
 
 #include <bitset>
 #include <algorithm>
-#include "GlobalVariables_Cache.h"
 #include "Cache.h"
+#include <stdlib.h>
 
 #include <octomap/MCTables.h>
 
@@ -85,6 +85,32 @@ namespace octomap {
 
 
   template <class NODE>
+  void OccupancyOcTreeBase<NODE>::insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin, Cache* myCache,
+                                             double maxrange, bool lazy_eval, bool discretize) {
+
+    KeySet free_cells, occupied_cells;
+    if (discretize)
+      computeDiscreteUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
+    else
+      computeUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange, myCache);
+
+#ifdef USE_CACHE
+    pointCloudCount++;
+    return;
+    
+#endif
+
+    // insert data into tree  -----------------------
+    for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
+      updateNode(*it, false, lazy_eval);
+    }
+    for (KeySet::iterator it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
+      updateNode(*it, true, lazy_eval);
+    }
+  }
+
+
+  template <class NODE>
   void OccupancyOcTreeBase<NODE>::insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin,
                                              double maxrange, bool lazy_eval, bool discretize) {
 
@@ -93,12 +119,6 @@ namespace octomap {
       computeDiscreteUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
     else
       computeUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
-
-#ifdef USE_CACHE
-    pointCloudCount++;
-    return;
-#endif
-
     // insert data into tree  -----------------------
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
       updateNode(*it, false, lazy_eval);
@@ -175,7 +195,7 @@ namespace octomap {
   template <class NODE>
   void OccupancyOcTreeBase<NODE>::computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
                                                 KeySet& free_cells, KeySet& occupied_cells,
-                                                double maxrange)
+                                                double maxrange, Cache* myCache)
   {
 
 
@@ -262,20 +282,122 @@ namespace octomap {
 
 #ifdef USE_CACHE
     int count = 0;
-    // std::cout << free_cells.size() << std::endl;
+    std::cout << std::endl << "# of unduplicated free cells " << free_cells.size() << std::endl;
+    // myCache->test();
     for(KeySet::iterator it = free_cells.begin(), end=free_cells.end(); it!= end; ){
-      myHashMap.put(*it, 0);
+      myCache->myHashMap.put(*it, 0);
       count++;
+      if (count == 50) {
+        myCache->PrintBuffer();
+        exit(0);
+      }
       ++it;
     }
     count = 0;
+    std::cout << "# of unduplicated occupied cells " << occupied_cells.size() << std::endl;
     for(KeySet::iterator it = occupied_cells.begin(), end=occupied_cells.end(); it!= end; ){
-      myHashMap.put(*it, 1);
+      myCache->myHashMap.put(*it, 1);
       count++;
       ++it;
     }
     return;
 #endif
+
+    // prefer occupied cells over free ones (and make sets disjunct)
+    for(KeySet::iterator it = free_cells.begin(), end=free_cells.end(); it!= end; ){
+      if (occupied_cells.find(*it) != occupied_cells.end()){
+        it = free_cells.erase(it);
+      } else {
+        ++it;
+      }
+    }
+  }
+
+  // the original function
+  template <class NODE>
+  void OccupancyOcTreeBase<NODE>::computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
+                                                KeySet& free_cells, KeySet& occupied_cells,
+                                                double maxrange)
+  {
+#ifdef _OPENMP
+    omp_set_num_threads(this->keyrays.size());
+    #pragma omp parallel for schedule(guided)
+#endif
+    for (int i = 0; i < (int)scan.size(); ++i) {
+      const point3d& p = scan[i];
+      unsigned threadIdx = 0;
+#ifdef _OPENMP
+      threadIdx = omp_get_thread_num();
+#endif
+      KeyRay* keyray = &(this->keyrays.at(threadIdx));
+
+
+      if (!use_bbx_limit) { // no BBX specified
+        if ((maxrange < 0.0) || ((p - origin).norm() <= maxrange) ) { // is not maxrange meas.
+          // free cells
+          if (this->computeRayKeys(origin, p, *keyray)){
+#ifdef _OPENMP
+            #pragma omp critical (free_insert)
+#endif
+            {
+              free_cells.insert(keyray->begin(), keyray->end());
+            }
+          }
+          // occupied endpoint
+          OcTreeKey key;
+          if (this->coordToKeyChecked(p, key)){
+#ifdef _OPENMP
+            #pragma omp critical (occupied_insert)
+#endif
+            {
+              occupied_cells.insert(key);
+            }
+          }
+        } else { // user set a maxrange and length is above
+          point3d direction = (p - origin).normalized ();
+          point3d new_end = origin + direction * (float) maxrange;
+          if (this->computeRayKeys(origin, new_end, *keyray)){
+#ifdef _OPENMP
+            #pragma omp critical (free_insert)
+#endif
+            {
+              free_cells.insert(keyray->begin(), keyray->end());
+            }
+          }
+        } // end if maxrange
+      } else { // BBX was set
+        // endpoint in bbx and not maxrange?
+        if ( inBBX(p) && ((maxrange < 0.0) || ((p - origin).norm () <= maxrange) ) )  {
+
+          // occupied endpoint
+          OcTreeKey key;
+          if (this->coordToKeyChecked(p, key)){
+#ifdef _OPENMP
+            #pragma omp critical (occupied_insert)
+#endif
+            {
+              occupied_cells.insert(key);
+            }
+          }
+
+          // update freespace, break as soon as bbx limit is reached
+          if (this->computeRayKeys(origin, p, *keyray)){
+            for(KeyRay::reverse_iterator rit=keyray->rbegin(); rit != keyray->rend(); rit++) {
+              if (inBBX(*rit)) {
+#ifdef _OPENMP
+                #pragma omp critical (free_insert)
+#endif
+                {
+                  free_cells.insert(*rit);
+                }
+              }
+              else break;
+            }
+          } // end if compute ray
+        } // end if in BBX and not maxrange
+      } // end bbx case
+
+    } // end for all points, end of parallel OMP loop
 
     // prefer occupied cells over free ones (and make sets disjunct)
     for(KeySet::iterator it = free_cells.begin(), end=free_cells.end(); it!= end; ){

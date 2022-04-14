@@ -2,15 +2,15 @@
 #define GLOBALVARIABLES_CACHE
 
 
-#include "HashMap.h"
+#include "Cache.h"
 
 
 // variables added especially for the cache realization
 
 namespace octomap{
-    extern HashMap myHashMap;
+    // extern HashMap myHashMap;
     extern int pointCloudCount;
-    // extern Cache cache;
+    // extern Buffer myBuffer;
     
 }
 

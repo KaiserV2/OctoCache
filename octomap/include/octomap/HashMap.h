@@ -7,7 +7,6 @@
 #include <iostream>
 #include <string.h>
 #include "OcTreeKey.h"
-#include "GlobalVariables_Octomap.h"
 
 namespace octomap{
 
@@ -24,11 +23,13 @@ public:
     }
 };
 
+
+
 class MyQueue {
 public:
     deque<MyPair> dq;
     MyQueue(){}
-    MyQueue(MyQueue& mq){
+    MyQueue(const MyQueue& mq){
         this->dq = mq.dq;
     }
     void Update(int _pcNum, bool val) {
@@ -50,6 +51,22 @@ public:
 
 };
 
+class Item{
+public:
+    OcTreeKey key;
+    int occupancy;
+    Item(){}
+    Item(const Item & item){
+        key = item.key;
+        occupancy = item.occupancy;
+    }
+    ~Item(){}
+    void PrintItem() {
+        std::cout << "Key: (" << key.k[0] << ','  << key.k[1] << ','  << key.k[2] << ')';
+        std::cout << ", Value: " << occupancy << std::endl;
+    }
+};
+
 // Hash node class template
 class HashNode {
 public:
@@ -65,7 +82,7 @@ public:
         return key;
     }
 
-    MyQueue getValue() {
+    MyQueue getValue() const {
         return value;
     }
 
@@ -95,9 +112,10 @@ public:
     HashMap() {
         // construct zero initialized hash table of size
         table = new HashNode *[TABLE_SIZE]();
-        // printf("HashMap created!\n");
+        printf("HashMap created!\n");
         // initialize the BOBHash32
-        hashFunc.initialize(SEED % MAX_PRIME32);
+        hashFunc.initialize(122);
+        clock = 0;
     }
 
     unsigned long MyKeyHash(const OcTreeKey& key)
@@ -149,6 +167,28 @@ public:
 
     void test() {
         printf("The HashMap has size %d", TABLE_SIZE);
+    }
+
+    // kick key and form item, then put to buffer
+    void KickToBuffer(queue<Item>* q){
+        // remove all KV at position clock
+        HashNode* entry = table[clock];
+        while(entry != NULL) {
+            // we find a KV 
+            OcTreeKey key = entry->getKey();
+            MyQueue tmpQueue = entry->getValue();
+            while(tmpQueue.dq.size() != 0) {
+                Item item;
+                item.key = key;
+                item.occupancy = tmpQueue.dq.front().occupancyCount;
+                q->push(item);
+            }
+        }
+        clock++;
+        if (clock == TABLE_SIZE) {
+            clock = 0;
+        }
+        
     }
 
     void put(const OcTreeKey &key, const bool &value) {
@@ -209,6 +249,7 @@ private:
     // hash table
     HashNode **table;
     BOBHash32 hashFunc;
+    uint32_t clock;
 };
 
 }

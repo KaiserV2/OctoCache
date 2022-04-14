@@ -39,6 +39,7 @@
 #include "OcTreeNode.h"
 #include "ScanGraph.h"
 
+
 namespace octomap {
 
   /**

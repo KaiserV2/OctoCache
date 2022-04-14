@@ -11,6 +11,7 @@ SET (octomap_SRCS
   GlobalVariables_Cache.cpp
   GlobalVariables_Octomap.cpp
   Param.cpp
+  Cache.cpp
   )
 
 # dynamic and static libs, see CMake FAQ:

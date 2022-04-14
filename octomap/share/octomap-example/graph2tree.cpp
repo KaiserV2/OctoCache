@@ -240,7 +240,8 @@ int main(int argc, char** argv) {
 
   cout << "\nCreating tree\n===========================\n";
 
-  tree = new OcTree(res);
+  OcTree * tree = new OcTree(res);
+  Cache* myCache = new Cache();
 
   tree->setClampingThresMin(clampingMin);
   tree->setClampingThresMax(clampingMax);
@@ -258,7 +259,7 @@ int main(int argc, char** argv) {
     if (simpleUpdate)
       tree->insertPointCloudRays((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange);
     else
-      tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange, false, discretize);
+      tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), myCache, maxrange, false, discretize);
 
     if (compression == 2){
       tree->toMaxLikelihood();
