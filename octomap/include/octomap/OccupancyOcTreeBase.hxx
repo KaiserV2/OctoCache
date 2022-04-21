@@ -88,13 +88,17 @@ namespace octomap {
   void OccupancyOcTreeBase<NODE>::insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin, Cache* myCache,
                                              double maxrange, bool lazy_eval, bool discretize) {
 
+#if DEBUG1
+        std::cout << "Inserting Point Cloud 1" << std::endl;
+#endif
+
     KeySet free_cells, occupied_cells;
     if (discretize)
       computeDiscreteUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
     else
       computeUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange, myCache);
 
-#ifdef USE_CACHE
+#if USE_CACHE
     pointCloudCount++;
     return;
     
@@ -221,7 +225,13 @@ namespace octomap {
             #pragma omp critical (free_insert)
 #endif
             {
+#if USE_CACHE
+              for (auto it = keyray->begin(); it != keyray->end(); it++) {
+                myCache->ProcessPkt(*it, 0);
+              }
+#elif
               free_cells.insert(keyray->begin(), keyray->end());
+#endif
             }
           }
           // occupied endpoint
@@ -231,7 +241,11 @@ namespace octomap {
             #pragma omp critical (occupied_insert)
 #endif
             {
+#if USE_CACHE
+              myCache->ProcessPkt(key, 1);
+#elif
               occupied_cells.insert(key);
+#endif
             }
           }
         } else { // user set a maxrange and length is above
@@ -279,38 +293,6 @@ namespace octomap {
       } // end bbx case
 
     } // end for all points, end of parallel OMP loop
-
-#ifdef USE_CACHE
-    int count = 0;
-    std::cout << std::endl << "# of unduplicated free cells " << free_cells.size() << std::endl;
-    // myCache->test();
-    for(KeySet::iterator it = free_cells.begin(), end=free_cells.end(); it!= end; ){
-      myCache->myHashMap.put(*it, 0);
-      count++;
-      if (count == 50) {
-        myCache->PrintBuffer();
-        exit(0);
-      }
-      ++it;
-    }
-    count = 0;
-    std::cout << "# of unduplicated occupied cells " << occupied_cells.size() << std::endl;
-    for(KeySet::iterator it = occupied_cells.begin(), end=occupied_cells.end(); it!= end; ){
-      myCache->myHashMap.put(*it, 1);
-      count++;
-      ++it;
-    }
-    return;
-#endif
-
-    // prefer occupied cells over free ones (and make sets disjunct)
-    for(KeySet::iterator it = free_cells.begin(), end=free_cells.end(); it!= end; ){
-      if (occupied_cells.find(*it) != occupied_cells.end()){
-        it = free_cells.erase(it);
-      } else {
-        ++it;
-      }
-    }
   }
 
   // the original function

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string.h>
 #include "OcTreeKey.h"
+#include "multi-core/readerwriterqueue.h"
 
 namespace octomap{
 
@@ -27,13 +28,13 @@ public:
 
 class MyQueue {
 public:
-    deque<MyPair> dq;
+    std::deque<MyPair> dq;
     MyQueue(){}
     MyQueue(const MyQueue& mq){
         this->dq = mq.dq;
     }
     void Update(int _pcNum, bool val) {
-#ifdef DETAIL_LOG
+#if DETAIL_LOG
         std::cout << "Updating from point cloud " << _pcNum << " with value " << val << std::endl;
 #endif
         int pcNum = dq.back().pointCloudNum;
@@ -54,7 +55,7 @@ public:
 class Item{
 public:
     OcTreeKey key;
-    int occupancy;
+    bool occupancy;
     Item(){}
     Item(const Item & item){
         key = item.key;
@@ -109,28 +110,34 @@ private:
 // Hash map class template
 class HashMap {
 public:
-    HashMap() {
+
+    HashMap(){}
+
+    void init(uint32_t _TABLE_SIZE) {
         // construct zero initialized hash table of size
+        TABLE_SIZE = _TABLE_SIZE;
         table = new HashNode *[TABLE_SIZE]();
+#if DEBUG1
         printf("HashMap created!\n");
-        // initialize the BOBHash32
+        // printf("Initialized with seed %lu", &x);
+#endif
         hashFunc.initialize(122);
         clock = 0;
     }
 
     unsigned long MyKeyHash(const OcTreeKey& key)
     {
-#ifdef DETAIL_LOG
-        printf("get to MyKeyHash\n");
-        printf("%lu\n",sizeof(key_type) * 3);
-        std::cout << key.k << std::endl;
-        std::cout << &(key.k[0]) << std::endl;
-        std::cout << &(key.k[1]) << std::endl;
-        std::cout << &(key.k[2]) << std::endl;
-#endif
+// #if DETAIL_LOG
+//         printf("get to MyKeyHash\n");
+//         printf("%lu\n",sizeof(key_type) * 3);
+//         std::cout << key.k << std::endl;
+//         std::cout << &(key.k[0]) << std::endl;
+//         std::cout << &(key.k[1]) << std::endl;
+//         std::cout << &(key.k[2]) << std::endl;
+// #endif
         uint32_t tmp = hashFunc.run((const char *)(&(key.k[0])), sizeof(key_type) * 3);
         uint32_t ans = tmp % TABLE_SIZE;
-#ifdef DETAIL_LOG
+#if DETAIL_LOG
         printf("hash value %d\n", ans);
 #endif
         return ans;
@@ -170,10 +177,14 @@ public:
     }
 
     // kick key and form item, then put to buffer
-    void KickToBuffer(queue<Item>* q){
+    void KickToBuffer(ReaderWriterQueue<Item>* q){
+    // void KickToBuffer(std::queue<Item>* q){
+#if DEBUG1
+        std::cout << "Kicking position " << clock << std::endl;
+#endif
         // remove all KV at position clock
-        HashNode* entry = table[clock];
-        while(entry != NULL) {
+        while(table[clock] != NULL) {
+            HashNode* entry = table[clock];
             // we find a KV 
             OcTreeKey key = entry->getKey();
             MyQueue tmpQueue = entry->getValue();
@@ -181,23 +192,41 @@ public:
                 Item item;
                 item.key = key;
                 item.occupancy = tmpQueue.dq.front().occupancyCount;
-                q->push(item);
+#if DEBUG1
+        std::cout << "Putting to buffer: ";
+        item.PrintItem();
+#endif
+                // q->push(item);
+                q->enqueue(item);
+                tmpQueue.dq.pop_front();
             }
+            table[clock] = entry->getNext();
+            delete entry;
         }
         clock++;
         if (clock == TABLE_SIZE) {
             clock = 0;
         }
-        
+    }
+
+    // when the whole workflow ends, clean all the items that are stalk within the cache
+    void cleanHashMap(ReaderWriterQueue<Item>* q) {
+        printf("Cleaning the HashMap\n");
+        for (uint32_t i = 0; i < TABLE_SIZE; i++) {
+            KickToBuffer(q);
+        }
     }
 
     void put(const OcTreeKey &key, const bool &value) {
-#ifdef DETAIL_LOG
-        printf("get to put\n");
+#if DEBUG1
+        std::cout << "Putting key into Hash Map" << std::endl;
 #endif
 
         unsigned long hashValue = MyKeyHash(key);
-        // printf("%lu", hashValue);
+        
+#if DEBUG1
+        printf("Hash value is %lu\n", hashValue);
+#endif
         HashNode *prev = NULL;
         HashNode *entry = table[hashValue];
 
@@ -218,6 +247,7 @@ public:
             // just update the value
             entry->setValue(value); // change here
         }
+        // end of put KV, move the clock
     }
 
     void remove(const OcTreeKey &key) {
@@ -248,6 +278,7 @@ public:
 private:
     // hash table
     HashNode **table;
+    uint32_t TABLE_SIZE;
     BOBHash32 hashFunc;
     uint32_t clock;
 };

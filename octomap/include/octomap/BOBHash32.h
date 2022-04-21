@@ -7,7 +7,7 @@
 #include <iostream>
 #include "Param.h"
 
-using namespace std;
+// using namespace std;
 
 
 
@@ -41,7 +41,6 @@ public:
 		/* Set up the internal state */
 		//len = length;
 		a = b = 0x9e3779b9;  /* the golden ratio; an arbitrary value */
-		// cout << this->prime32Num << endl; 
 		c = prime32[this->prime32Num];         /* the previous hash value */
 		/*---------------------------------------- handle most of the key */
 		while (len >= 12)
@@ -89,18 +88,18 @@ public:
 
 	static uint32_t get_random_prime_index()
 	{
-		random_device rd;
+		std::random_device rd;
 		return rd() % MAX_PRIME32;
 	}
 
-    static vector<uint32_t> get_random_prime_index_list(int n)
+    static std::vector<uint32_t> get_random_prime_index_list(int n)
     {
-        random_device rd;
-        unordered_set<int> st;
+        std::random_device rd;
+        std::unordered_set<int> st;
         while ((int)st.size() < n) {
             st.insert(rd() % MAX_PRIME32);
         }
-        return vector<uint32_t>(st.begin(), st.end());
+        return std::vector<uint32_t>(st.begin(), st.end());
     }
 private:
 	uint32_t prime32Num;

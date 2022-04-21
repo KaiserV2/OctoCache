@@ -129,7 +129,8 @@ int main(int argc, char** argv) {
 
 
   timeval start; 
-  timeval stop; 
+  timeval stop;
+  timeval stop1;  
 
   int arg = 0;
   while (++arg < argc) {
@@ -241,7 +242,12 @@ int main(int argc, char** argv) {
   cout << "\nCreating tree\n===========================\n";
 
   OcTree * tree = new OcTree(res);
-  Cache* myCache = new Cache();
+
+#if USE_CACHE
+  Cache* myCache = new Cache(100000000);
+  myCache->tree = tree;
+  myCache->StartThread();
+#endif
 
   tree->setClampingThresMin(clampingMin);
   tree->setClampingThresMax(clampingMax);
@@ -250,7 +256,7 @@ int main(int argc, char** argv) {
 
 
   gettimeofday(&start, NULL);  // start timer
-  size_t numScans = graph->size();
+  size_t numScans = graph->size(); 
   size_t currentScan = 1;
   for (ScanGraph::iterator scan_it = graph->begin(); scan_it != graph->end(); scan_it++) {
     if (max_scan_no > 0) cout << "("<<currentScan << "/" << max_scan_no << ") " << flush;
@@ -258,8 +264,14 @@ int main(int argc, char** argv) {
 
     if (simpleUpdate)
       tree->insertPointCloudRays((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange);
-    else
+    else{
+#if USE_CACHE
       tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), myCache, maxrange, false, discretize);
+#else
+      tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange, false, discretize);
+#endif
+    }
+      
 
     if (compression == 2){
       tree->toMaxLikelihood();
@@ -271,12 +283,18 @@ int main(int argc, char** argv) {
 
     if ((max_scan_no > 0) && (currentScan == (unsigned int) max_scan_no))
       break;
-
     currentScan++;
   }
   gettimeofday(&stop, NULL);  // stop timer
+#if USE_CACHE
+  myCache->EndThread();
+  gettimeofday(&stop1, NULL);  // stop timer
+#endif
   
   double time_to_insert = (stop.tv_sec - start.tv_sec) + 1.0e-6 *(stop.tv_usec - start.tv_usec);
+  cout << "First thread run time" << time_to_insert << " sec" << endl;
+  double time_to_insert1 = (stop1.tv_sec - start.tv_sec) + 1.0e-6 *(stop1.tv_usec - start.tv_usec);
+  cout << "Total run time" << time_to_insert1 << " sec" << endl;
 
   // get rid of graph in mem before doing anything fancy with tree (=> memory)
   delete graph;

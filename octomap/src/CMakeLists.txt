@@ -11,8 +11,10 @@ SET (octomap_SRCS
   GlobalVariables_Cache.cpp
   GlobalVariables_Octomap.cpp
   Param.cpp
-  Cache.cpp
+  MyCache.cpp
   )
+
+
 
 # dynamic and static libs, see CMake FAQ:
 ADD_LIBRARY( octomap SHARED ${octomap_SRCS})
@@ -25,6 +27,10 @@ SET_TARGET_PROPERTIES(octomap-static PROPERTIES OUTPUT_NAME "octomap")
 add_dependencies(octomap-static octomath-static)
 
 TARGET_LINK_LIBRARIES(octomap octomath)
+
+# add_compile_options(-pthread)
+
+# TARGET_LINK_LIBRARIES(MyCache pthread)
 
 if(NOT EXISTS "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/octomap")
   file(MAKE_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/octomap")
