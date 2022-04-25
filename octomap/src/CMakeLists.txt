@@ -12,6 +12,7 @@ SET (octomap_SRCS
   GlobalVariables_Octomap.cpp
   Param.cpp
   MyCache.cpp
+  HashMap.cpp
   )
 
 

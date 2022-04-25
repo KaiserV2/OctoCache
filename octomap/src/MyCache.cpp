@@ -25,7 +25,10 @@ namespace octomap{
         std::cout << "Processing packet" << std::endl;
 #endif
         this->myHashMap.put(key, value);
-        this->myHashMap.KickToBuffer(&buffer);
+        pktCount++;
+        if (pktCount % clockWait = 0) {
+            this->myHashMap.KickToBuffer(&buffer, &bufferSize);
+        }
     }
 
     void DigestBuffer(std::thread* thisThd, Cache* myCache) {

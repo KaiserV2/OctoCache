@@ -11,6 +11,8 @@
 
 namespace octomap{
 
+class OcTree;
+
 extern int pointCloudCount;
 
 class MyPair {
@@ -68,6 +70,25 @@ public:
     }
 };
 
+class MyValue{
+public:
+    double accumulateOccupancy; // the past accumulated occupancy
+    bool currentOccupancy; // occupancy of the current point cloud
+    uint32_t currentPointCloud;
+    MyValue(){}
+    MyValue(double _accumulateOccupancy, bool _currentOccupancy, uint32_t _currentPointCloud){
+        accumulateOccupancy = _accumulateOccupancy;
+        currentOccupancy = _currentOccupancy;
+        currentPointCloud = _currentPointCloud;
+    }
+    MyValue(const MyValue& m) {
+        accumulateOccupancy = m.accumulateOccupancy;
+        currentOccupancy = m.currentOccupancy;
+        currentPointCloud = m.currentPointCloud;
+    }
+};
+
+
 // Hash node class template
 class HashNode {
 public:
@@ -76,7 +97,7 @@ public:
         next = NULL;
         this->key = key;
         MyPair tmp = MyPair(pointCloudCount, value);
-        this->value.dq.push_back(tmp);
+        this->myValue.dq.push_back(tmp);
     }
 
     OcTreeKey getKey() const {
@@ -84,11 +105,11 @@ public:
     }
 
     MyQueue getValue() const {
-        return value;
+        return myValue;
     }
 
     void setValue(bool value) {
-        this->value.Update(pointCloudCount, value);
+        this->myValue.Update(pointCloudCount, value);
     }
 
     HashNode *getNext() const {
@@ -99,10 +120,10 @@ public:
         this->next = next;
     }
 
-private:
+public:
     // key-value pair
     OcTreeKey key;
-    MyQueue value;
+    MyValue myValue;
     // next bucket with the same key
     HashNode *next;
 };
@@ -113,9 +134,10 @@ public:
 
     HashMap(){}
 
-    void init(uint32_t _TABLE_SIZE) {
+    void init(uint32_t _TABLE_SIZE, uint32_t _clockWait, OcTree* _tree) {
         // construct zero initialized hash table of size
         TABLE_SIZE = _TABLE_SIZE;
+        clockWait = _clockWait;
         table = new HashNode *[TABLE_SIZE]();
 #if DEBUG1
         printf("HashMap created!\n");
@@ -123,6 +145,8 @@ public:
 #endif
         hashFunc.initialize(122);
         clock = 0;
+        currentPointCloud = 0;
+        tree = _tree;
     }
 
     unsigned long MyKeyHash(const OcTreeKey& key)
@@ -158,7 +182,7 @@ public:
         delete [] table;
     }
 
-    bool get(const OcTreeKey &key, MyQueue &value) {
+    bool get(const OcTreeKey &key, MyValue &value) {
         unsigned long hashValue = MyKeyHash(key);
         HashNode *entry = table[hashValue];
 
@@ -177,7 +201,7 @@ public:
     }
 
     // kick key and form item, then put to buffer
-    void KickToBuffer(ReaderWriterQueue<Item>* q){
+    void KickToBuffer(ReaderWriterQueue<Item>* q, atomic_int* bufferSize){
     // void KickToBuffer(std::queue<Item>* q){
 #if DEBUG1
         std::cout << "Kicking position " << clock << std::endl;
@@ -207,6 +231,7 @@ public:
         if (clock == TABLE_SIZE) {
             clock = 0;
         }
+        *bufferSize++;
     }
 
     // when the whole workflow ends, clean all the items that are stalk within the cache
@@ -217,38 +242,7 @@ public:
         }
     }
 
-    void put(const OcTreeKey &key, const bool &value) {
-#if DEBUG1
-        std::cout << "Putting key into Hash Map" << std::endl;
-#endif
-
-        unsigned long hashValue = MyKeyHash(key);
-        
-#if DEBUG1
-        printf("Hash value is %lu\n", hashValue);
-#endif
-        HashNode *prev = NULL;
-        HashNode *entry = table[hashValue];
-
-        while (entry != NULL && entry->getKey() != key) {
-            prev = entry;
-            entry = entry->getNext();
-        }
-
-        if (entry == NULL) {
-            entry = new HashNode(key, value);
-            if (prev == NULL) {
-                // insert as first bucket
-                table[hashValue] = entry;
-            } else {
-                prev->setNext(entry);
-            }
-        } else {
-            // just update the value
-            entry->setValue(value); // change here
-        }
-        // end of put KV, move the clock
-    }
+    void put(const OcTreeKey &key, const bool &value) {};
 
     void remove(const OcTreeKey &key) {
         unsigned long hashValue = MyKeyHash(key);
@@ -275,12 +269,14 @@ public:
         }
     }
 
-private:
+public:
     // hash table
     HashNode **table;
     uint32_t TABLE_SIZE;
     BOBHash32 hashFunc;
     uint32_t clock;
+    uint32_t currentPointCloud; // # of current inserting point cloud
+    OcTree* tree;
 };
 
 }

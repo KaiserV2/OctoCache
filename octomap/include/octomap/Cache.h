@@ -19,15 +19,21 @@ class Cache{
 public:
     // have a buffer
     std::atomic_bool run;
+    std::atomic_int bufferSize;
     ReaderWriterQueue<Item> buffer;
     // std::queue<Item> buffer;
     HashMap myHashMap;
     OcTree* tree;
     std::thread thd;
+    uint32_t pktCount;
+    uint32_t clockWait;
     // function to feed items in the buffer to the octree
 
-    Cache(uint32_t _TABLE_SIZE) {
-        myHashMap.init(_TABLE_SIZE);
+    Cache(uint32_t _TABLE_SIZE, uint32_t _clockWait) {
+        myHashMap.init(_TABLE_SIZE, _clockWait);
+        bufferSize = 0;
+        pktCount = 0; // here pkt count means the number of "duplicated insertions"
+        clockWait = 16; // make it 2^n, the default is 90k / 7k
     } 
     ~Cache() {}
     

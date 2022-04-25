@@ -35,6 +35,9 @@
 #include <algorithm>
 #include "Cache.h"
 #include <stdlib.h>
+#include <omp.h>
+
+
 
 #include <octomap/MCTables.h>
 
@@ -100,6 +103,7 @@ namespace octomap {
 
 #if USE_CACHE
     pointCloudCount++;
+    myCache->myHashMap->currentPointCloud++;
     return;
     
 #endif
