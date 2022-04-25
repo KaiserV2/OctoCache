@@ -103,7 +103,7 @@ namespace octomap {
 
 #if USE_CACHE
     pointCloudCount++;
-    myCache->myHashMap->currentPointCloud++;
+    myCache->myHashMap.currentPointCloud++;
     return;
     
 #endif

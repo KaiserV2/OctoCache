@@ -34,6 +34,7 @@
 #undef max
 #undef min
 #include <limits>
+#include "Param.h"
 
 #ifdef _OPENMP
   #include <omp.h>
@@ -433,8 +434,10 @@ namespace octomap {
   template <class NODE,class I>
   NODE* OcTreeBaseImpl<NODE,I>::search (const OcTreeKey& key, unsigned int depth) const {
     assert(depth <= tree_depth);
-    if (root == NULL)
+
+    if (root == NULL){
       return NULL;
+    }
 
     if (depth == 0)
       depth = tree_depth;

@@ -4,6 +4,7 @@
 #include "Param.h"
 #include "BOBHash32.h"
 #include <queue>
+#include <atomic>
 #include <iostream>
 #include <string.h>
 #include "OcTreeKey.h"
@@ -57,8 +58,12 @@ public:
 class Item{
 public:
     OcTreeKey key;
-    bool occupancy;
+    double occupancy;
     Item(){}
+    Item(const OcTreeKey& _key, const double& _occupancy){
+        key = _key;
+        occupancy = _occupancy;
+    }
     Item(const Item & item){
         key = item.key;
         occupancy = item.occupancy;
@@ -86,30 +91,34 @@ public:
         currentOccupancy = m.currentOccupancy;
         currentPointCloud = m.currentPointCloud;
     }
+    void compress(double prob_miss_log, double prob_hit_log) {
+        // merge current info into accumulate info
+        if (currentOccupancy == false) {
+            accumulateOccupancy += prob_miss_log;
+        }
+        else{
+            accumulateOccupancy += prob_hit_log;
+        }
+    }
 };
 
 
 // Hash node class template
 class HashNode {
 public:
-    HashNode(const OcTreeKey &key, const bool &value) {
+    HashNode(const OcTreeKey &_key, const MyValue& _myValue) {
         // only happens when a new node is created
         next = NULL;
-        this->key = key;
-        MyPair tmp = MyPair(pointCloudCount, value);
-        this->myValue.dq.push_back(tmp);
+        key = _key;
+        myValue = _myValue;
     }
 
     OcTreeKey getKey() const {
         return key;
     }
 
-    MyQueue getValue() const {
+    MyValue getValue() const {
         return myValue;
-    }
-
-    void setValue(bool value) {
-        this->myValue.Update(pointCloudCount, value);
     }
 
     HashNode *getNext() const {
@@ -134,10 +143,9 @@ public:
 
     HashMap(){}
 
-    void init(uint32_t _TABLE_SIZE, uint32_t _clockWait, OcTree* _tree) {
+    void init(uint32_t _TABLE_SIZE, OcTree* _tree) {
         // construct zero initialized hash table of size
         TABLE_SIZE = _TABLE_SIZE;
-        clockWait = _clockWait;
         table = new HashNode *[TABLE_SIZE]();
 #if DEBUG1
         printf("HashMap created!\n");
@@ -169,7 +177,7 @@ public:
 
     ~HashMap() {
         // destroy all buckets one by one
-        for (int i = 0; i < TABLE_SIZE; ++i) {
+        for (uint32_t i = 0; i < TABLE_SIZE; ++i) {
             HashNode *entry = table[i];
             while (entry != NULL) {
                 HashNode *prev = entry;
@@ -200,49 +208,17 @@ public:
         printf("The HashMap has size %d", TABLE_SIZE);
     }
 
-    // kick key and form item, then put to buffer
-    void KickToBuffer(ReaderWriterQueue<Item>* q, atomic_int* bufferSize){
-    // void KickToBuffer(std::queue<Item>* q){
-#if DEBUG1
-        std::cout << "Kicking position " << clock << std::endl;
-#endif
-        // remove all KV at position clock
-        while(table[clock] != NULL) {
-            HashNode* entry = table[clock];
-            // we find a KV 
-            OcTreeKey key = entry->getKey();
-            MyQueue tmpQueue = entry->getValue();
-            while(tmpQueue.dq.size() != 0) {
-                Item item;
-                item.key = key;
-                item.occupancy = tmpQueue.dq.front().occupancyCount;
-#if DEBUG1
-        std::cout << "Putting to buffer: ";
-        item.PrintItem();
-#endif
-                // q->push(item);
-                q->enqueue(item);
-                tmpQueue.dq.pop_front();
-            }
-            table[clock] = entry->getNext();
-            delete entry;
-        }
-        clock++;
-        if (clock == TABLE_SIZE) {
-            clock = 0;
-        }
-        *bufferSize++;
-    }
+    void KickToBuffer(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
+
+    void put(const OcTreeKey &key, const bool &value);
 
     // when the whole workflow ends, clean all the items that are stalk within the cache
-    void cleanHashMap(ReaderWriterQueue<Item>* q) {
+    void cleanHashMap(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize) {
         printf("Cleaning the HashMap\n");
         for (uint32_t i = 0; i < TABLE_SIZE; i++) {
-            KickToBuffer(q);
+            KickToBuffer(q, bufferSize);
         }
     }
-
-    void put(const OcTreeKey &key, const bool &value) {};
 
     void remove(const OcTreeKey &key) {
         unsigned long hashValue = MyKeyHash(key);

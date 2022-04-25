@@ -5,7 +5,7 @@
 
 #define USE_CACHE true
 #define DETAIL_LOG false
-#define DEBUG1 false
+#define DEBUG1 true
 
 const int DEFAULT_TABLE_SIZE = 20;
 #define SEED 19991228

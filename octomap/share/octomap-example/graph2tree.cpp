@@ -244,8 +244,7 @@ int main(int argc, char** argv) {
   OcTree * tree = new OcTree(res);
 
 #if USE_CACHE
-  Cache* myCache = new Cache(100000000);
-  myCache->tree = tree;
+  Cache* myCache = new Cache(1000, tree);
   myCache->StartThread();
 #endif
 

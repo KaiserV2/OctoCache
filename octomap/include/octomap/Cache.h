@@ -29,11 +29,12 @@ public:
     uint32_t clockWait;
     // function to feed items in the buffer to the octree
 
-    Cache(uint32_t _TABLE_SIZE, uint32_t _clockWait) {
-        myHashMap.init(_TABLE_SIZE, _clockWait);
+    Cache(uint32_t _TABLE_SIZE, OcTree* _tree, uint32_t _clockWait = 16) {
+        myHashMap.init(_TABLE_SIZE, _tree);
         bufferSize = 0;
+        tree = _tree;
         pktCount = 0; // here pkt count means the number of "duplicated insertions"
-        clockWait = 16; // make it 2^n, the default is 90k / 7k
+        clockWait = _clockWait; // make it 2^n, the default is 90k / 7k
     } 
     ~Cache() {}
     

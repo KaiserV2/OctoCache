@@ -26,8 +26,8 @@ namespace octomap{
 #endif
         this->myHashMap.put(key, value);
         pktCount++;
-        if (pktCount % clockWait = 0) {
-            this->myHashMap.KickToBuffer(&buffer, &bufferSize);
+        if (pktCount % clockWait == 0) {
+            this->myHashMap.KickToBuffer(&buffer, bufferSize);
         }
     }
 
@@ -75,7 +75,7 @@ namespace octomap{
 
     void Cache::EndThread() {
         std::cout << "We turn off the thread" << std::endl;
-        this->myHashMap.cleanHashMap(&buffer);
+        this->myHashMap.cleanHashMap(&buffer, bufferSize);
         this->run = false;
         thd.join();
         Item item;
