@@ -213,12 +213,7 @@ public:
     void put(const OcTreeKey &key, const bool &value);
 
     // when the whole workflow ends, clean all the items that are stalk within the cache
-    void cleanHashMap(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize) {
-        printf("Cleaning the HashMap\n");
-        for (uint32_t i = 0; i < TABLE_SIZE; i++) {
-            KickToBuffer(q, bufferSize);
-        }
-    }
+    void cleanHashMap(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
 
     void remove(const OcTreeKey &key) {
         unsigned long hashValue = MyKeyHash(key);

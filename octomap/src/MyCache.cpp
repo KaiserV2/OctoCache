@@ -36,11 +36,12 @@ namespace octomap{
         if(!setaffinity(thisThd, 20))
             return;
 #endif
-#if DEBUG1
-        std::cout << "Digesting Buffer " << std::endl;
-#endif
-        while(myCache->run) {
+        while((myCache->run) || (myCache->bufferSize != 0)) {
             Item item;
+            if (myCache->run == false){
+                std::cout << "BufferSize returns" << myCache->bufferSize << std::endl;
+                std::cout << "Trydequeue returns" << myCache->buffer.try_dequeue(item) << std::endl;
+            }
             while (myCache->buffer.try_dequeue(item)) { 
 #if DEBUG1
                 std::cout << "Putting item to octree!" << std::endl;
@@ -50,6 +51,8 @@ namespace octomap{
                 if (occupancy == true) {
                     // its an occupied voxel
                     myCache->tree->updateNode(key, true, lazy_eval);
+                    myCache->bufferSize--;
+                    // std::cout << myCache->bufferSize << std::endl;
 #if DEBUG1
                     std::cout << "Done octree insertion" << std::endl;
 #endif
@@ -57,6 +60,8 @@ namespace octomap{
                 else {
                     // a free voxel
                     myCache->tree->updateNode(key, false, lazy_eval);
+                    myCache->bufferSize--;
+                    // std::cout << myCache->bufferSize << std::endl;
 #if DEBUG1
                     std::cout << "Done octree insertion" << std::endl;
 #endif
@@ -76,12 +81,11 @@ namespace octomap{
     void Cache::EndThread() {
         std::cout << "We turn off the thread" << std::endl;
         this->myHashMap.cleanHashMap(&buffer, bufferSize);
-        this->run = false;
+        this->run = false; 
         thd.join();
+        std::cout << "Remaining buffersize" << bufferSize << std::endl;
         Item item;
-        bool ans = this->buffer.try_dequeue(item);
-        printf("Buffer check: ");
-        std::cout << this->buffer.try_dequeue(item) << std::endl;
+        std::cout << "Buffer check: " <<  this->buffer.try_dequeue(item) << std::endl;
     }
 
     void Cache::PrintBuffer() {

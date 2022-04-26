@@ -285,6 +285,9 @@ int main(int argc, char** argv) {
     currentScan++;
   }
   gettimeofday(&stop, NULL);  // stop timer
+#if DEBUG2
+  cout << endl << myCache->bufferSize << endl;
+#endif
 #if USE_CACHE
   myCache->EndThread();
   gettimeofday(&stop1, NULL);  // stop timer

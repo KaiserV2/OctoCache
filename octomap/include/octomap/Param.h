@@ -3,9 +3,10 @@
 
 #include <stdint.h>
 
-#define USE_CACHE true
+#define USE_CACHE false
 #define DETAIL_LOG false
-#define DEBUG1 true
+#define DEBUG1 false
+#define DEBUG2 false
 
 const int DEFAULT_TABLE_SIZE = 20;
 #define SEED 19991228

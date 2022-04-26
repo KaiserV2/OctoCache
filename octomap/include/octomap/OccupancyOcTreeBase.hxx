@@ -233,7 +233,7 @@ namespace octomap {
               for (auto it = keyray->begin(); it != keyray->end(); it++) {
                 myCache->ProcessPkt(*it, 0);
               }
-#elif
+#else
               free_cells.insert(keyray->begin(), keyray->end());
 #endif
             }
@@ -247,7 +247,7 @@ namespace octomap {
             {
 #if USE_CACHE
               myCache->ProcessPkt(key, 1);
-#elif
+#else
               occupied_cells.insert(key);
 #endif
             }

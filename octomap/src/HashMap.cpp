@@ -6,16 +6,26 @@ namespace octomap{
  // kick key and form item, then put to buffer
 void HashMap::KickToBuffer(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize){
     // void KickToBuffer(std::queue<Item>* q){
-#if DEBUG1
+#if DEBUG2
+    if (currentPointCloud == 1){
         std::cout << "Kicking position " << clock << std::endl;
+    }
 #endif
         // remove all KV at position clock
-        while(table[clock] != NULL) {
-            HashNode* entry = table[clock];
+        HashNode *prev = NULL;
+        HashNode* entry = table[clock];
+        while(entry != NULL) {
             // we find a KV 
+#if DEBUG2
+            if (currentPointCloud == 1){
+                printf("visited point cloud is %d\n", entry->myValue.currentPointCloud);
+            }  
+#endif
             OcTreeKey key = entry->getKey();
-            if ((entry->myValue.currentPointCloud = currentPointCloud)) {
+            if ((entry->myValue.currentPointCloud == currentPointCloud)) {
                 // don't kick that entry because the current stage is updating it
+                prev = entry;
+                entry = entry->getNext();
                 continue;
             }
             else{
@@ -24,20 +34,42 @@ void HashMap::KickToBuffer(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSi
                 // kick that entry
                 Item item = Item(key, entry->myValue.accumulateOccupancy);
                 q->enqueue(item);
+                bufferSize++;
+
+                if (prev == NULL) {
+                    // entry is the first
+                    table[clock] = entry->getNext();
+                    delete entry;
+                    entry = table[clock];
+                }
+                else{
+                    prev->setNext(entry->getNext());
+                    delete entry;
+                    entry = prev->getNext();
+                }   
+#if DEBUG2
+                if (currentPointCloud == 1){
+                    printf("get here\n");
+                }  
+#endif
             }
-            table[clock] = entry->getNext();
-            delete entry;
         }
         clock++;
         if (clock == TABLE_SIZE) {
             clock = 0;
         }
-        bufferSize++;
+#if DEBUG2
+        if (currentPointCloud == 1){
+            std::cout << "Finished kicking" << std::endl;
+        }
+#endif
     }
 
 void HashMap::put(const OcTreeKey &key, const bool &value) {
-#if DEBUG1
-        std::cout << "Putting key into Hash Map" << std::endl;
+#if DEBUG2
+        if(currentPointCloud == 1){
+            std::cout << "Putting key into Hash Map" << std::endl;
+        }
 #endif
 
         unsigned long hashValue = MyKeyHash(key);
@@ -61,7 +93,9 @@ void HashMap::put(const OcTreeKey &key, const bool &value) {
             // first query the key into Octree
             double accumulateOccupancy;
             if (tree->search(key) == NULL) {
+#if DEBUG1
                 printf("find a NULL\n");
+#endif
                 accumulateOccupancy = 0.0;
             }
             else{
@@ -99,5 +133,14 @@ void HashMap::put(const OcTreeKey &key, const bool &value) {
         printf("Successfully put key\n");
 #endif        
     }
+
+
+void HashMap::cleanHashMap(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize) {
+    currentPointCloud++;
+    printf("Cleaning the HashMap\n");
+    for (uint32_t i = 0; i < TABLE_SIZE; i++) {
+        KickToBuffer(q, bufferSize);
+    }
+}
 
 }
