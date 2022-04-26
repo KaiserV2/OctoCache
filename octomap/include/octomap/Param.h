@@ -8,6 +8,7 @@
 #define DEBUG1 false
 #define DEBUG2 false
 
+#define _OPENMP
 const int DEFAULT_TABLE_SIZE = 20;
 #define SEED 19991228
 

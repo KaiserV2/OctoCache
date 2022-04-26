@@ -38,7 +38,6 @@
 #include <omp.h>
 
 
-
 #include <octomap/MCTables.h>
 
 namespace octomap {
@@ -153,7 +152,7 @@ namespace octomap {
       return;
 
 #ifdef _OPENMP
-    omp_set_num_threads(this->keyrays.size());
+    // omp_set_num_threads(this->keyrays.size());
     #pragma omp parallel for
 #endif
     for (int i = 0; i < (int)pc.size(); ++i) {
@@ -209,6 +208,8 @@ namespace octomap {
 
 
 #ifdef _OPENMP
+    // #pragma omp parallel
+    // omp_set_num_threads(this->keyrays.size());
     omp_set_num_threads(this->keyrays.size());
     #pragma omp parallel for schedule(guided)
 #endif
@@ -306,7 +307,7 @@ namespace octomap {
                                                 double maxrange)
   {
 #ifdef _OPENMP
-    omp_set_num_threads(this->keyrays.size());
+    // omp_set_num_threads(this->keyrays.size());
     #pragma omp parallel for schedule(guided)
 #endif
     for (int i = 0; i < (int)scan.size(); ++i) {

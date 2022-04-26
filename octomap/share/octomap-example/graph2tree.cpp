@@ -40,6 +40,7 @@
 #include <octomap/octomap_timing.h>
 #include <octomap/GlobalVariables.h>
 #include <octomap/Cache.h>
+#include <omp.h>
 
 using namespace std;
 using namespace octomap;
@@ -242,7 +243,7 @@ int main(int argc, char** argv) {
   cout << "\nCreating tree\n===========================\n";
 
   OcTree * tree = new OcTree(res);
-
+  omp_set_num_threads(6);
 #if USE_CACHE
   Cache* myCache = new Cache(1000, tree);
   myCache->StartThread();
@@ -294,10 +295,11 @@ int main(int argc, char** argv) {
 #endif
   
   double time_to_insert = (stop.tv_sec - start.tv_sec) + 1.0e-6 *(stop.tv_usec - start.tv_usec);
-  cout << "First thread run time" << time_to_insert << " sec" << endl;
+  cout << endl <<  "Run time" << time_to_insert << " sec" << endl;
+#if USE_CACHE
   double time_to_insert1 = (stop1.tv_sec - start.tv_sec) + 1.0e-6 *(stop1.tv_usec - start.tv_usec);
   cout << "Total run time" << time_to_insert1 << " sec" << endl;
-
+#endif
   // get rid of graph in mem before doing anything fancy with tree (=> memory)
   delete graph;
   if (logfile.is_open())
