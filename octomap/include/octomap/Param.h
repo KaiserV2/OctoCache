@@ -3,12 +3,13 @@
 
 #include <stdint.h>
 
-#define USE_CACHE false
+#define USE_CACHE true
+#define ONT_THREAD false // the 1 threaded version of cache
 #define DETAIL_LOG false
 #define DEBUG1 false
 #define DEBUG2 false
 
-#define _OPENMP
+// #define _OPENMP
 const int DEFAULT_TABLE_SIZE = 20;
 #define SEED 19991228
 

@@ -65,6 +65,66 @@ void HashMap::KickToBuffer(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSi
 #endif
     }
 
+
+
+
+
+
+void HashMap::KickToOctree() {
+// remove all KV at position clock
+    HashNode *prev = NULL;
+    HashNode* entry = table[clock];
+    while(entry != NULL) {
+        // we find a KV 
+#if DEBUG2
+        if (currentPointCloud == 1){
+            printf("visited point cloud is %d\n", entry->myValue.currentPointCloud);
+        }  
+#endif
+        OcTreeKey key = entry->getKey();
+        if ((entry->myValue.currentPointCloud == currentPointCloud)) {
+            // don't kick that entry because the current stage is updating it
+            prev = entry;
+            entry = entry->getNext();
+            continue;
+        }
+        else{
+            // first compress that result
+            entry->myValue.compress(tree->getProbMissLog(), tree->getProbHitLog());
+            // kick that entry
+            Item item = Item(key, entry->myValue.accumulateOccupancy);
+            tree->updateNode(key, item.occupancy, lazy_eval);
+
+            if (prev == NULL) {
+                // entry is the first
+                table[clock] = entry->getNext();
+                delete entry;
+                entry = table[clock];
+            }
+            else{
+                prev->setNext(entry->getNext());
+                delete entry;
+                entry = prev->getNext();
+            }   
+        }
+    }
+    clock++;
+    if (clock == TABLE_SIZE) {
+        clock = 0;
+    }
+#if DEBUG2
+    if (currentPointCloud == 1){
+        std::cout << "Finished kicking" << std::endl;
+    }
+#endif
+}
+
+
+
+
+
+
+
 void HashMap::put(const OcTreeKey &key, const bool &value) {
 #if DEBUG2
         if(currentPointCloud == 1){

@@ -58,7 +58,7 @@ public:
 class Item{
 public:
     OcTreeKey key;
-    double occupancy;
+    float occupancy;
     Item(){}
     Item(const OcTreeKey& _key, const double& _occupancy){
         key = _key;
@@ -239,6 +239,8 @@ public:
             delete entry;
         }
     }
+
+    void KickToOctree();
 
 public:
     // hash table

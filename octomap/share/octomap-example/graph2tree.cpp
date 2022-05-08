@@ -111,7 +111,7 @@ void outputStatistics(const OcTree* tree){
 int main(int argc, char** argv) {
   // default values:
   double res = 0.1;
-  string graphFilename = "../../../../Dataset/Octomap/fr_079.graph";
+  string graphFilename = "../../../../Dataset/Octomap/fr_campus.graph";
   string treeFilename = "output";
   double maxrange = -1;
   int max_scan_no = -1;
@@ -243,9 +243,12 @@ int main(int argc, char** argv) {
   cout << "\nCreating tree\n===========================\n";
 
   OcTree * tree = new OcTree(res);
-  omp_set_num_threads(6);
+
+#ifdef _OPENMP
+  omp_set_num_threads(4);
+#endif
 #if USE_CACHE
-  Cache* myCache = new Cache(1000, tree);
+  Cache* myCache = new Cache(100000000, tree);
   myCache->StartThread();
 #endif
 
@@ -290,15 +293,16 @@ int main(int argc, char** argv) {
   cout << endl << myCache->bufferSize << endl;
 #endif
 #if USE_CACHE
+  // myCache->EndOneThread();
   myCache->EndThread();
   gettimeofday(&stop1, NULL);  // stop timer
 #endif
   
-  double time_to_insert = (stop.tv_sec - start.tv_sec) + 1.0e-6 *(stop.tv_usec - start.tv_usec);
-  cout << endl <<  "Run time" << time_to_insert << " sec" << endl;
+  double time_to_insert = (stop.tv_sec - stop1.tv_sec) + 1.0e-6 *(stop.tv_usec - stop1.tv_usec);
+  cout << endl <<  "Buffer digesting time " << time_to_insert << " sec" << endl;
 #if USE_CACHE
   double time_to_insert1 = (stop1.tv_sec - start.tv_sec) + 1.0e-6 *(stop1.tv_usec - start.tv_usec);
-  cout << "Total run time" << time_to_insert1 << " sec" << endl;
+  cout << "Total run time " << time_to_insert1 << " sec" << endl;
 #endif
   // get rid of graph in mem before doing anything fancy with tree (=> memory)
   delete graph;

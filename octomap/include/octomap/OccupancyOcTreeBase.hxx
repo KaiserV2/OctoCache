@@ -90,10 +90,6 @@ namespace octomap {
   void OccupancyOcTreeBase<NODE>::insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin, Cache* myCache,
                                              double maxrange, bool lazy_eval, bool discretize) {
 
-#if DEBUG1
-        std::cout << "Inserting Point Cloud 1" << std::endl;
-#endif
-
     KeySet free_cells, occupied_cells;
     if (discretize)
       computeDiscreteUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
@@ -107,6 +103,7 @@ namespace octomap {
     
 #endif
 
+    std::cout << "inserting into octree" << std::endl;
     // insert data into tree  -----------------------
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
       updateNode(*it, false, lazy_eval);
@@ -127,6 +124,7 @@ namespace octomap {
     else
       computeUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
     // insert data into tree  -----------------------
+    
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
       updateNode(*it, false, lazy_eval);
     }
@@ -208,9 +206,7 @@ namespace octomap {
 
 
 #ifdef _OPENMP
-    // #pragma omp parallel
     // omp_set_num_threads(this->keyrays.size());
-    omp_set_num_threads(this->keyrays.size());
     #pragma omp parallel for schedule(guided)
 #endif
     for (int i = 0; i < (int)scan.size(); ++i) {
@@ -276,7 +272,7 @@ namespace octomap {
             #pragma omp critical (occupied_insert)
 #endif
             {
-              occupied_cells.insert(key);
+              // occupied_cells.insert(key);
             }
           }
 
@@ -288,7 +284,7 @@ namespace octomap {
                 #pragma omp critical (free_insert)
 #endif
                 {
-                  free_cells.insert(*rit);
+                  // free_cells.insert(*rit);
                 }
               }
               else break;
@@ -306,6 +302,8 @@ namespace octomap {
                                                 KeySet& free_cells, KeySet& occupied_cells,
                                                 double maxrange)
   {
+  // std::cout << use_bbx_limit << std::endl;
+
 #ifdef _OPENMP
     // omp_set_num_threads(this->keyrays.size());
     #pragma omp parallel for schedule(guided)
@@ -394,6 +392,7 @@ namespace octomap {
         ++it;
       }
     }
+    std::cout << "with hash table" << std::endl;
   }
 
   template <class NODE>

@@ -41,6 +41,7 @@ public:
     void ProcessPkt(const OcTreeKey &key, const bool &value);
     // static void DigestBuffer(std::thread* thisThd);
     void EndThread();
+    void EndOneThread();
     void StartThread();
     void PrintBuffer();
     void test();
