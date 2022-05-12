@@ -4,6 +4,7 @@
 #include <thread>
 #include <sys/time.h>
 
+
 namespace octomap{
 
 #ifdef __linux__
@@ -28,7 +29,7 @@ namespace octomap{
         this->myHashMap.put(key, value);
         pktCount++;
         if (pktCount % clockWait == 0) {
-#if ONT_THREAD
+#if ONE_THREAD
             // directly kick from hash map to octree
             this->myHashMap.KickToOctree();
 #else
@@ -73,6 +74,9 @@ namespace octomap{
                     std::cout << "Done octree insertion" << std::endl;
 #endif
                 }
+#if DETAIL_COUNT
+                    insert_to_octree++;
+#endif
             }
         }
     }

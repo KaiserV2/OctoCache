@@ -111,7 +111,7 @@ void outputStatistics(const OcTree* tree){
 int main(int argc, char** argv) {
   // default values:
   double res = 0.1;
-  string graphFilename = "../../../../Dataset/Octomap/fr_campus.graph";
+  string graphFilename = "../../../../Dataset/Octomap/fr_079.graph";
   string treeFilename = "output";
   double maxrange = -1;
   int max_scan_no = -1;
@@ -249,7 +249,10 @@ int main(int argc, char** argv) {
 #endif
 #if USE_CACHE
   Cache* myCache = new Cache(100000000, tree);
+#if ONE_THREAD
+#else
   myCache->StartThread();
+#endif
 #endif
 
   tree->setClampingThresMin(clampingMin);
@@ -292,9 +295,18 @@ int main(int argc, char** argv) {
 #if DEBUG2
   cout << endl << myCache->bufferSize << endl;
 #endif
+#if DETAIL_COUNT
+  cout << "fetch_from_octree " << fetch_from_octree << endl;
+  cout << "insert_to_octree " << insert_to_octree << endl;
+  cout << "insert_to_hashmap " << insert_to_hashmap << endl;
+  cout << "insert_to_buffer " << insert_to_buffer << endl;
+#endif
 #if USE_CACHE
   // myCache->EndOneThread();
+#if ONE_THREAD
+#else
   myCache->EndThread();
+#endif
   gettimeofday(&stop1, NULL);  // stop timer
 #endif
   

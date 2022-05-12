@@ -1,5 +1,10 @@
 #include <octomap/Param.h>
 
+uint32_t fetch_from_octree = 0;
+uint32_t insert_to_octree = 0;
+uint32_t insert_to_hashmap = 0;
+uint32_t insert_to_buffer = 0;
+
 uint32_t big_prime3232[MAX_BIG_PRIME32] = {
 	20177, 20183, 20201, 20219, 20231, 20233, 20249, 20261, 20269, 20287,
 	20297, 20323, 20327, 20333, 20341, 20347, 20353, 20357, 20359, 20369,

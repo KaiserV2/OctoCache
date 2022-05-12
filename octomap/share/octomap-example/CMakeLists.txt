@@ -5,7 +5,7 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)
 
-# SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}-fopenmp")
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}-fopenmp")
 
 find_package(octomap REQUIRED)
 include_directories(${OCTOMAP_INCLUDE_DIRS})

@@ -34,6 +34,9 @@ void HashMap::KickToBuffer(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSi
                 // kick that entry
                 Item item = Item(key, entry->myValue.accumulateOccupancy);
                 q->enqueue(item);
+#if DETAIL_COUNT
+                insert_to_buffer++;
+#endif
                 bufferSize++;
 
                 if (prev == NULL) {
@@ -126,6 +129,9 @@ void HashMap::KickToOctree() {
 
 
 void HashMap::put(const OcTreeKey &key, const bool &value) {
+#if DETAIL_COUNT
+        insert_to_hashmap++;
+#endif
 #if DEBUG2
         if(currentPointCloud == 1){
             std::cout << "Putting key into Hash Map" << std::endl;
@@ -155,6 +161,9 @@ void HashMap::put(const OcTreeKey &key, const bool &value) {
             if (tree->search(key) == NULL) {
 #if DEBUG1
                 printf("find a NULL\n");
+#endif
+#if DETAIL_COUNT
+                    fetch_from_octree++;
 #endif
                 accumulateOccupancy = 0.0;
             }

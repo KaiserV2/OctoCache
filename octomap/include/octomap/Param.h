@@ -4,14 +4,20 @@
 #include <stdint.h>
 
 #define USE_CACHE true
-#define ONT_THREAD false // the 1 threaded version of cache
+#define ONE_THREAD false // the 1 threaded version of cache
 #define DETAIL_LOG false
 #define DEBUG1 false
 #define DEBUG2 false
+#define DETAIL_COUNT true
 
 // #define _OPENMP
 const int DEFAULT_TABLE_SIZE = 20;
 #define SEED 19991228
+
+extern uint32_t fetch_from_octree;
+extern uint32_t insert_to_octree;
+extern uint32_t insert_to_hashmap;
+extern uint32_t insert_to_buffer;
 
 #define MAX_PRIME32 1229
 #define MAX_BIG_PRIME32 50

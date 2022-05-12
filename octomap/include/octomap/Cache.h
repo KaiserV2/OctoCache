@@ -11,6 +11,7 @@
 #include <atomic>
 #include <thread>
 
+
 namespace octomap{
 
 class OcTree; // every function concerned with OcTree only passes OcTree as a pointer
