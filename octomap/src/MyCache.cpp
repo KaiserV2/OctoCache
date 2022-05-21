@@ -56,6 +56,14 @@ namespace octomap{
 #endif
                 OcTreeKey key = item.key;
                 bool occupancy = item.occupancy;
+                /*
+                 * minghao: I think the segment below (line 67-84, line 101-118) can be rewritten as:
+                myCache->tree->updateNode(key, occupancy, lazy_eval);
+                myCache->bufferSize--;
+#if DEBUG1
+                std::cout << "Done octree insertion" << std::endl;
+#endif
+                 */
                 if (occupancy == true) {
                     // its an occupied voxel
                     myCache->tree->updateNode(key, true, lazy_eval);

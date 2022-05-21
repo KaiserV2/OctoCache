@@ -158,6 +158,29 @@ void HashMap::put(const OcTreeKey &key, const bool &value) {
             // create new hash node
             // first query the key into Octree
             double accumulateOccupancy;
+
+            /* 
+             * minghao: The code segment below (line 185-195) might be more efficient if rewritten to be similar to:
+            
+            OcTreeNode* hashNode = tree->search(key);
+            if (hashNode) {
+                accumulateOccupancy = hashNode->getOccupancy();
+            }
+            else{
+#if DEBUG1
+                printf("find a NULL\n");
+#endif
+#if DETAIL_COUNT
+                fetch_from_octree++;
+#endif
+                accumulateOccupancy = 0.0;
+            }
+
+            Note: I haven't checked the correctness of the piece of code above, but I think it is
+                  slightly more efficient.
+            
+             */
+
             if (tree->search(key) == NULL) {
 #if DEBUG1
                 printf("find a NULL\n");

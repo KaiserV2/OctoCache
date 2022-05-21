@@ -18,7 +18,9 @@ extern int pointCloudCount;
 
 class MyPair {
 public:
-    int pointCloudNum;
+    int pointCloudNum; // minghao: I think it might be better if we name this field "pointCloudID"?
+                        //"pointCloudNum" sounds like the total number of pointCloud. 
+                        //but it's just my feeling and not a big deal :)
     bool occupancyCount; // + means occupied, - means free
     MyPair() {}
     MyPair(int p, bool o) {

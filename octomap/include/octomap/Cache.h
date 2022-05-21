@@ -25,7 +25,8 @@ public:
     // std::queue<Item> buffer;
     HashMap myHashMap;
     OcTree* tree;
-    std::thread thd;
+    std::thread thd; //minghao: I think this abbreviation is a little confusing 
+                     //(i.e., I probably can't tell from "thd" that it refers to thread)
     uint32_t pktCount;
     uint32_t clockWait;
     // function to feed items in the buffer to the octree
