@@ -71,8 +71,10 @@ file(GLOB octomap_HDRS ${PROJECT_SOURCE_DIR}/include/octomap/*.h ${PROJECT_SOURC
 install(FILES ${octomap_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/octomap")
 file(GLOB octomap_math_HDRS ${PROJECT_SOURCE_DIR}/include/octomap/math/*.h)
 file(GLOB octomap_multi-core_HDRS ${PROJECT_SOURCE_DIR}/include/octomap/multi-core/*.h)
+file(GLOB octomap_hash_HDRS ${PROJECT_SOURCE_DIR}/include/octomap/hash/*.h)
 install(FILES ${octomap_math_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/octomap/math")
 install(FILES ${octomap_multi-core_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/octomap/multi-core")
+install(FILES ${octomap_hash_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/octomap/hash")
 
 # Install package.xml (catkin/ament/rosdep)
 install(FILES package.xml DESTINATION "${CMAKE_INSTALL_DATADIR}/octomap")

@@ -203,6 +203,10 @@ namespace octomap {
                                                 double maxrange, Cache* myCache)
   {
 
+    
+    if(myCache->myHashMap.currentPointCloud == 1){
+      printf("get to compute update \n");
+    }
 
 
 #ifdef _OPENMP
@@ -294,6 +298,7 @@ namespace octomap {
       } // end bbx case
 
     } // end for all points, end of parallel OMP loop
+    myCache->myHashMap.flush();
   }
 
   // the original function

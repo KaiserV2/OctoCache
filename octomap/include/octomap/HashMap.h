@@ -9,8 +9,11 @@
 #include <string.h>
 #include "OcTreeKey.h"
 #include "multi-core/readerwriterqueue.h"
+#include "hash/parallel-murmur3.h"
+#include "hash/parallel-xxhash.h"
 
 namespace octomap{
+
 
 class OcTree;
 
@@ -27,6 +30,20 @@ public:
     }
 };
 
+class OcTreeKeyValuePair {
+public:
+    OcTreeKey key;
+    bool value;
+    OcTreeKeyValuePair(){}
+    OcTreeKeyValuePair(const OcTreeKey& _key, const bool& _value){
+        key = _key;
+        value = _value;
+    }
+    OcTreeKeyValuePair(const OcTreeKeyValuePair& p) {
+        key = p.key;
+        value = p.value;
+    }
+};
 
 
 class MyQueue {
@@ -141,7 +158,10 @@ public:
 class HashMap {
 public:
 
-    HashMap(){}
+    HashMap(){
+        OcTreeKeyBufferSize = 0;
+        hashSeed = 0x3afc8e77;
+    }
 
     void init(uint32_t _TABLE_SIZE, OcTree* _tree) {
         // construct zero initialized hash table of size
@@ -210,7 +230,11 @@ public:
 
     void KickToBuffer(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
 
-    void put(const OcTreeKey &key, const bool &value);
+    void put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue);
+
+    void store(const OcTreeKey &key, const bool &value);
+
+    void flush();
 
     // when the whole workflow ends, clean all the items that are stalk within the cache
     void cleanHashMap(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
@@ -250,6 +274,10 @@ public:
     uint32_t clock;
     uint32_t currentPointCloud; // # of current inserting point cloud
     OcTree* tree;
+    uint32_t hashSeed;
+    uint32_t OcTreeKeyBuffer[3][8];
+    uint32_t OcTreeKeyBufferSize;
+    OcTreeKeyValuePair BufferedPairs[8];
 };
 
 }

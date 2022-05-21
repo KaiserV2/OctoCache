@@ -1,6 +1,8 @@
 #include <octomap/HashMap.h>
 #include <octomap/OcTree.h>
 
+#define DEBUG3 true
+
 namespace octomap{
 
  // kick key and form item, then put to buffer
@@ -123,29 +125,17 @@ void HashMap::KickToOctree() {
 }
 
 
-
-
-
-
-
-void HashMap::put(const OcTreeKey &key, const bool &value) {
+void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue) {
 #if DETAIL_COUNT
         insert_to_hashmap++;
 #endif
-#if DEBUG2
-        if(currentPointCloud == 1){
-            std::cout << "Putting key into Hash Map" << std::endl;
-        }
-#endif
-
-        unsigned long hashValue = MyKeyHash(key);
-        
-#if DEBUG1
-        printf("Hash value is %lu\n", hashValue);
-#endif
         HashNode *prev = NULL;
         HashNode *entry = table[hashValue];
-
+#if DEBUG3
+        if (currentPointCloud == 1){
+            printf("Hash value is %u\n", hashValue);
+        }     
+#endif 
         while (entry != NULL && entry->getKey() != key) {
             prev = entry;
             entry = entry->getNext();
@@ -202,6 +192,50 @@ void HashMap::put(const OcTreeKey &key, const bool &value) {
         printf("Successfully put key\n");
 #endif        
     }
+
+
+
+
+// store 8 keys and compute the hash in parallel
+void HashMap::store(const OcTreeKey &key, const bool &value){
+#if DEBUG3
+    if (currentPointCloud == 1){
+        printf("Hash value is %u\n", value);
+    }
+#endif 
+    BufferedPairs[OcTreeKeyBufferSize] = OcTreeKeyValuePair(key, value);
+    OcTreeKeyBuffer[0][OcTreeKeyBufferSize] = uint32_t(key.k[0]);
+    OcTreeKeyBuffer[1][OcTreeKeyBufferSize] = uint32_t(key.k[1]);
+    OcTreeKeyBuffer[2][OcTreeKeyBufferSize] = uint32_t(key.k[2]);
+    OcTreeKeyBufferSize++;
+    
+    if (OcTreeKeyBufferSize == 8) {
+        uint32_t hashValue[8];
+        murmur3<3>::parallel(OcTreeKeyBuffer[0], hashSeed, hashValue);
+        for (int i = 0; i < 8; ++i) {
+            put(BufferedPairs[i].key, BufferedPairs[i].value, hashValue[i] % TABLE_SIZE);
+        }
+        OcTreeKeyBufferSize = 0;
+    } 
+    else{
+        return;
+    }
+
+}
+
+// flush the "less than 8" keys in the buffer
+void HashMap::flush() {
+    uint32_t* hashValue = new uint32_t[OcTreeKeyBufferSize];
+    murmur3<3>::parallel(OcTreeKeyBuffer[0], hashSeed, hashValue);
+    for (int i = 0; i < OcTreeKeyBufferSize; ++i) {
+        put(BufferedPairs[i].key, BufferedPairs[i].value, hashValue[i] % TABLE_SIZE);
+    }
+    OcTreeKeyBufferSize = 0;
+    delete[] hashValue;
+}
+
+
+
 
 
 void HashMap::cleanHashMap(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize) {

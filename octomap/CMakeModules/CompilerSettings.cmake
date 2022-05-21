@@ -9,8 +9,10 @@ MESSAGE (STATUS "${PROJECT_NAME} building as ${CMAKE_BUILD_TYPE}")
 
 # COMPILER FLAGS
 IF (CMAKE_COMPILER_IS_GNUCC)
-  SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-error ")
-  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -pthread -fopenmp") ## deleted -pthread -Werror here
+  # SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-error ")
+  # SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -pthread -fopenmp") ## deleted -pthread -Werror here
+  # ADD (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -O3 -g3 -Wall -Werror -fno-strict-aliasing -Wno-sign-compare -march=native -I src/third-party/")
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -g3 -Wall -Wextra -Wpedantic -mavx2 -pthread -fno-strict-aliasing -Wno-sign-compare -march=native -I src/third-party/")
   SET (CMAKE_CXX_FLAGS_RELEASE "-O3 -funroll-loops -DNDEBUG")
   SET (CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
   # Shared object compilation under 64bit (vtable)

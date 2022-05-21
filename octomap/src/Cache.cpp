@@ -26,7 +26,7 @@ namespace octomap{
 #if DEBUG1
         std::cout << "Processing packet" << std::endl;
 #endif
-        this->myHashMap.put(key, value);
+        this->myHashMap.store(key, value);
         pktCount++;
         if (pktCount % clockWait == 0) {
 #if ONE_THREAD
