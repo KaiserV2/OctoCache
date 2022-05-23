@@ -89,6 +89,7 @@ namespace octomap {
     * @param scan Pointcloud (measurement endpoints), in global reference frame
     * @param sensor_origin measurement origin in global reference frame
     * @param maxrange maximum range for how long individual beams are inserted (default -1: complete beam)
+    * minghao: @param myCache pointer to the Cache instance for caching updates.
     * @param lazy_eval whether update of inner nodes is omitted after the update (default: false).
     *   This speeds up the insertion, but you need to call updateInnerOccupancy() when done.
     * @param discretize whether the scan is discretized first into octree key cells (default: false).
@@ -384,6 +385,7 @@ namespace octomap {
      * @param free_cells keys of nodes to be cleared
      * @param occupied_cells keys of nodes to be marked occupied
      * @param maxrange maximum range for raycasting (-1: unlimited)
+     * minghao: @param myCache pointer to the Cache instance for caching updates
      */
     void computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
                        KeySet& free_cells,
