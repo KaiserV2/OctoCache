@@ -1,7 +1,7 @@
 #include <octomap/HashMap.h>
 #include <octomap/OcTree.h>
 
-#define DEBUG3 true
+#define DEBUG3 false
 
 namespace octomap{
 
@@ -124,18 +124,15 @@ void HashMap::KickToOctree() {
 #endif
 }
 
-
-void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue) {
+void HashMap::put(const OcTreeKey &key, const bool &value){
+// void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue) {
 #if DETAIL_COUNT
         insert_to_hashmap++;
 #endif
+        unsigned long hashValue = MyKeyHash(key);
         HashNode *prev = NULL;
         HashNode *entry = table[hashValue];
-#if DEBUG3
-        if (currentPointCloud == 1){
-            printf("Hash value is %u\n", hashValue);
-        }     
-#endif 
+
         while (entry != NULL && entry->getKey() != key) {
             prev = entry;
             entry = entry->getNext();
@@ -225,13 +222,12 @@ void HashMap::store(const OcTreeKey &key, const bool &value){
 
 // flush the "less than 8" keys in the buffer
 void HashMap::flush() {
-    uint32_t* hashValue = new uint32_t[OcTreeKeyBufferSize];
+    uint32_t hashValue[8];
     murmur3<3>::parallel(OcTreeKeyBuffer[0], hashSeed, hashValue);
     for (int i = 0; i < OcTreeKeyBufferSize; ++i) {
         put(BufferedPairs[i].key, BufferedPairs[i].value, hashValue[i] % TABLE_SIZE);
     }
     OcTreeKeyBufferSize = 0;
-    delete[] hashValue;
 }
 
 

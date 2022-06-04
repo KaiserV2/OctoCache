@@ -4,6 +4,7 @@
 #include <thread>
 #include <sys/time.h>
 
+#define DEBUG3 false 
 
 namespace octomap{
 
@@ -23,10 +24,13 @@ namespace octomap{
 #endif
 
     void Cache::ProcessPkt(const OcTreeKey &key, const bool &value){
-#if DEBUG1
+#if DEBUG3
+    if (this->myHashMap.currentPointCloud == 1){
         std::cout << "Processing packet" << std::endl;
+    }
 #endif
         this->myHashMap.store(key, value);
+        // this->myHashMap.put(key,value);
         pktCount++;
         if (pktCount % clockWait == 0) {
 #if ONE_THREAD

@@ -38,7 +38,7 @@
 
 #include <octomap/octomap.h>
 #include <octomap/octomap_timing.h>
-#include <octomap/GlobalVariables.h>
+// #include <octomap/GlobalVariables.h>
 #include <octomap/Cache.h>
 #include <omp.h>
 
@@ -111,7 +111,7 @@ void outputStatistics(const OcTree* tree){
 int main(int argc, char** argv) {
   // default values:
   double res = 0.1;
-  string graphFilename = "../../../../Dataset/Octomap/fr_079.graph";
+  string graphFilename = "/home/peiqing/Dataset/Octomap/fr_079.graph";
   string treeFilename = "output";
   double maxrange = -1;
   int max_scan_no = -1;

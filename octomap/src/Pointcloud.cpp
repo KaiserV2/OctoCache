@@ -35,6 +35,7 @@
  * but it can be used to determine the c++ standard library implementation.
  */ 
 #include <ciso646>
+#include <iostream>
 
 #if defined(_MSC_VER) || defined(_LIBCPP_VERSION)
   #include <algorithm>
@@ -73,6 +74,7 @@ namespace octomap {
 
   Pointcloud::Pointcloud(const Pointcloud& other) {
     for (Pointcloud::const_iterator it = other.begin(); it != other.end(); it++) {
+      std::cout << point3d(*it) << std::endl;
       points.push_back(point3d(*it));
     }
   }

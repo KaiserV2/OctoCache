@@ -230,6 +230,7 @@ public:
 
     void KickToBuffer(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
 
+    // void put(const OcTreeKey &key, const bool &value);
     void put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue);
 
     void store(const OcTreeKey &key, const bool &value);

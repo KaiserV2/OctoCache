@@ -203,12 +203,6 @@ namespace octomap {
                                                 double maxrange, Cache* myCache)
   {
 
-    
-    if(myCache->myHashMap.currentPointCloud == 1){
-      printf("get to compute update \n");
-    }
-
-
 #ifdef _OPENMP
     // omp_set_num_threads(this->keyrays.size());
     #pragma omp parallel for schedule(guided)
