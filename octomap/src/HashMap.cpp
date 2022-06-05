@@ -124,12 +124,12 @@ void HashMap::KickToOctree() {
 #endif
 }
 
-void HashMap::put(const OcTreeKey &key, const bool &value){
-// void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue) {
+// void HashMap::put(const OcTreeKey &key, const bool &value){
+void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue) {
 #if DETAIL_COUNT
         insert_to_hashmap++;
 #endif
-        unsigned long hashValue = MyKeyHash(key);
+        // unsigned long hashValue = MyKeyHash(key);
         HashNode *prev = NULL;
         HashNode *entry = table[hashValue];
 
