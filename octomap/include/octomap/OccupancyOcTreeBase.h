@@ -390,6 +390,8 @@ namespace octomap {
                        KeySet& occupied_cells,
                        double maxrange, Cache* myCache);
 
+    void duplicationCheck(KeySet& free_cells, KeySet& occupied_cells);
+
     // the original function
     void computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
                        KeySet& free_cells,

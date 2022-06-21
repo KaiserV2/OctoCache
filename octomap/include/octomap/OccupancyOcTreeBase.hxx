@@ -131,6 +131,9 @@ namespace octomap {
     for (KeySet::iterator it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
       updateNode(*it, true, lazy_eval);
     }
+    original_nodeupdate += free_cells.size();
+    original_nodeupdate += occupied_cells.size();
+    // std::cout << free_cells.size() + occupied_cells.size() << " octree insertions" << std::endl;
   }
 
   template <class NODE>
@@ -295,6 +298,18 @@ namespace octomap {
     myCache->myHashMap.flush();
   }
 
+
+  template <class NODE>
+  void OccupancyOcTreeBase<NODE>::duplicationCheck(KeySet& free_cells, KeySet& occupied_cells){
+    for(KeySet::iterator it = free_cells.begin(), end=free_cells.end(); it!= end; ){
+      if (occupied_cells.find(*it) != occupied_cells.end()){
+        it = free_cells.erase(it);
+      } else {
+        ++it;
+      }
+    }
+  }
+
   // the original function
   template <class NODE>
   void OccupancyOcTreeBase<NODE>::computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
@@ -384,15 +399,10 @@ namespace octomap {
     } // end for all points, end of parallel OMP loop
 
     // prefer occupied cells over free ones (and make sets disjunct)
-    for(KeySet::iterator it = free_cells.begin(), end=free_cells.end(); it!= end; ){
-      if (occupied_cells.find(*it) != occupied_cells.end()){
-        it = free_cells.erase(it);
-      } else {
-        ++it;
-      }
-    }
-    std::cout << "with hash table" << std::endl;
+    duplicationCheck(free_cells, occupied_cells);
   }
+
+
 
   template <class NODE>
   NODE* OccupancyOcTreeBase<NODE>::setNodeValue(const OcTreeKey& key, float log_odds_value, bool lazy_eval) {

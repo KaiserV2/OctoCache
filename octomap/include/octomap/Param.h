@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define USE_CACHE true
+#define USE_CACHE false
 #define ONE_THREAD false // the 1 threaded version of cache
 #define DETAIL_LOG false
 #define DEBUG1 false
@@ -18,6 +18,12 @@ extern uint32_t fetch_from_octree;
 extern uint32_t insert_to_octree;
 extern uint32_t insert_to_hashmap;
 extern uint32_t insert_to_buffer;
+extern uint32_t original_nodeupdate;
+
+
+extern uint64_t hash_time;
+extern uint64_t put_time;
+extern uint64_t kick_time;
 
 #define MAX_PRIME32 1229
 #define MAX_BIG_PRIME32 50

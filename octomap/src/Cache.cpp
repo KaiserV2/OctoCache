@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <thread>
 #include <sys/time.h>
+#include <x86intrin.h>
 
 #define DEBUG3 false 
 
@@ -24,13 +25,12 @@ namespace octomap{
 #endif
 
     void Cache::ProcessPkt(const OcTreeKey &key, const bool &value){
-#if DEBUG3
-    if (this->myHashMap.currentPointCloud == 1){
-        std::cout << "Processing packet" << std::endl;
-    }
-#endif
-        this->myHashMap.store(key, value);
-        // this->myHashMap.put(key,value);
+        // uint64_t point1, point2, point3, point4;
+        // point1 = __rdtsc();
+        uint32_t hashValue = this->myHashMap.ScalarHash(key, value);
+        // point2 = __rdtsc();
+        this->myHashMap.put(key, value, hashValue % this->myHashMap.TABLE_SIZE);
+        // point3 = __rdtsc();
         pktCount++;
         if (pktCount % clockWait == 0) {
 #if ONE_THREAD
@@ -38,8 +38,12 @@ namespace octomap{
             this->myHashMap.KickToOctree();
 #else
             this->myHashMap.KickToBuffer(&buffer, bufferSize);
+            // point4 = __rdtsc();
+            // kick_time +=  point4 - point3;
 #endif
         }
+        // hash_time +=  point2 - point1;
+        // put_time +=  point3 - point2;
     }
 
     void DigestBuffer(std::thread* thisThd, Cache* myCache) {
@@ -60,6 +64,7 @@ namespace octomap{
 #endif
                 OcTreeKey key = item.key;
                 bool occupancy = item.occupancy;
+                fout << key.k[0] << " " << key.k[1] << " " << key.k[2] << occupancy << std::endl;
                 if (occupancy == true) {
                     // its an occupied voxel
                     myCache->tree->updateNode(key, true, lazy_eval);

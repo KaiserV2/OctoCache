@@ -40,7 +40,7 @@ void HashMap::KickToBuffer(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSi
                 insert_to_buffer++;
 #endif
                 bufferSize++;
-
+                // itemCount++;
                 if (prev == NULL) {
                     // entry is the first
                     table[clock] = entry->getNext();
@@ -99,7 +99,6 @@ void HashMap::KickToOctree() {
             // kick that entry
             Item item = Item(key, entry->myValue.accumulateOccupancy);
             tree->updateNode(key, item.occupancy, lazy_eval);
-
             if (prev == NULL) {
                 // entry is the first
                 table[clock] = entry->getNext();
@@ -230,8 +229,13 @@ void HashMap::flush() {
     OcTreeKeyBufferSize = 0;
 }
 
-
-
+uint32_t HashMap::ScalarHash(const OcTreeKey &key, const bool &value){
+    uint32_t keys[2] = {0, 0};
+    memcpy((uint16_t*)keys, &key.k[0], 6);
+    uint32_t hashValue = murmur3<2>::scalar((uint32_t *)(&(keys[0])), hashSeed);
+    // uint32_t hashValue = hashFunc.run((const char *)(&(key.k[0])), sizeof(key_type) * 3) % TABLE_SIZE;
+    return hashValue;
+}
 
 
 void HashMap::cleanHashMap(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize) {

@@ -40,6 +40,7 @@
 #include <octomap/octomap_timing.h>
 // #include <octomap/GlobalVariables.h>
 #include <octomap/Cache.h>
+#include <octomap/Param.h>
 #include <omp.h>
 
 using namespace std;
@@ -111,8 +112,9 @@ void outputStatistics(const OcTree* tree){
 int main(int argc, char** argv) {
   // default values:
   double res = 0.1;
-  string graphFilename = "/home/peiqing/Dataset/Octomap/fr_079.graph";
+  string datasetname = "fr_079";
   string treeFilename = "output";
+  uint32_t hashMapSize = 1000000;
   double maxrange = -1;
   int max_scan_no = -1;
   bool detailedLog = false;
@@ -135,8 +137,36 @@ int main(int argc, char** argv) {
 
   int arg = 0;
   while (++arg < argc) {
-    if (! strcmp(argv[arg], "-i"))
-      graphFilename = std::string(argv[++arg]);
+    if (! strcmp(argv[arg], "-i")){
+      string graphFileNum = std::string(argv[++arg]);
+      if (graphFileNum == "1"){
+        datasetname = "fr_079";
+      }
+      else if (graphFileNum == "2"){
+        datasetname = "fr_campus";
+      }
+      else if (graphFileNum == "3"){
+        datasetname = "new_college";
+      }
+      else{ // default
+        datasetname = "fr_079";
+      }
+    }
+    else if (!strcmp(argv[arg], "-s")){ // specify the size of the hash table
+      string mapsize = std::string(argv[++arg]);
+      if (mapsize == "0"){
+        hashMapSize /= 100;
+      }
+      else if (mapsize == "1"){
+        hashMapSize /= 1;
+      }
+      else if (mapsize == "2"){
+        hashMapSize *= 100;
+      }
+      else{ // default
+        hashMapSize /= 1;
+      }
+    }
     else if (!strcmp(argv[arg], "-o"))
       treeFilename = std::string(argv[++arg]);
     else if (! strcmp(argv[arg], "-res") && argc-arg < 2)
@@ -175,7 +205,7 @@ int main(int argc, char** argv) {
       printUsage(argv[0]);
     }
   }
-
+  string graphFilename = "/home/peiqing/Dataset/Octomap/" + datasetname + ".graph";
   if (graphFilename == "" || treeFilename == "") {
     printUsage(argv[0]);
   }
@@ -248,7 +278,8 @@ int main(int argc, char** argv) {
   omp_set_num_threads(4);
 #endif
 #if USE_CACHE
-  Cache* myCache = new Cache(100000000, tree);
+  string filename = "/home/peiqing/Dataset/Octomap/" + datasetname + ".txt";
+  Cache* myCache = new Cache(hashMapSize, tree, filename);
 #if ONE_THREAD
 #else
   myCache->StartThread();
@@ -265,9 +296,8 @@ int main(int argc, char** argv) {
   size_t numScans = graph->size(); 
   size_t currentScan = 1;
   for (ScanGraph::iterator scan_it = graph->begin(); scan_it != graph->end(); scan_it++) {
-    if (max_scan_no > 0) cout << "("<<currentScan << "/" << max_scan_no << ") " << flush;
-    else cout << "("<<currentScan << "/" << numScans << ") " << flush;
-
+    // if (max_scan_no > 0) cout << "("<<currentScan << "/" << max_scan_no << ") " << flush;
+    // else cout << "("<<currentScan << "/" << numScans << ") " << flush;
     if (simpleUpdate)
       tree->insertPointCloudRays((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange);
     else{
@@ -277,7 +307,8 @@ int main(int argc, char** argv) {
       tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange, false, discretize);
 #endif
     }
-      
+    // cout << myCache->myHashMap.itemCount << endl;
+    // myCache->myHashMap.itemCount = 0;  
 
     if (compression == 2){
       tree->toMaxLikelihood();
@@ -295,31 +326,44 @@ int main(int argc, char** argv) {
 #if DEBUG2
   cout << endl << myCache->bufferSize << endl;
 #endif
+
+#if USE_CACHE
+#if ONE_THREAD
+  myCache->EndOneThread();
+#else
+  myCache->EndThread();
+#endif
+  gettimeofday(&stop1, NULL);  // stop timer
+#endif
 #if DETAIL_COUNT
   cout << "fetch_from_octree " << fetch_from_octree << endl;
   cout << "insert_to_octree " << insert_to_octree << endl;
   cout << "insert_to_hashmap " << insert_to_hashmap << endl;
   cout << "insert_to_buffer " << insert_to_buffer << endl;
 #endif
-#if USE_CACHE
-  // myCache->EndOneThread();
-#if ONE_THREAD
-#else
-  myCache->EndThread();
-#endif
-  gettimeofday(&stop1, NULL);  // stop timer
-#endif
-  
+
   double time_to_insert = (stop.tv_sec - stop1.tv_sec) + 1.0e-6 *(stop.tv_usec - stop1.tv_usec);
   cout << endl <<  "Buffer digesting time " << time_to_insert << " sec" << endl;
 #if USE_CACHE
   double time_to_insert1 = (stop1.tv_sec - start.tv_sec) + 1.0e-6 *(stop1.tv_usec - start.tv_usec);
   cout << "Total run time " << time_to_insert1 << " sec" << endl;
+#else
+  cout << "updated " << original_nodeupdate << " nodes in total"<< endl;
 #endif
   // get rid of graph in mem before doing anything fancy with tree (=> memory)
   delete graph;
   if (logfile.is_open())
     logfile.close();
+
+#if USE_CACHE
+  fstream foutPortion;
+  foutPortion.open("/home/peiqing/Test/Octomap/HashPortion/Log.txt", ios_base::app);
+  uint64_t all_time = hash_time + put_time + kick_time;
+  double hash_portion = (double)hash_time / (double)all_time;
+  double put_portion = (double)put_time / (double)all_time;
+  double kick_portion = (double)kick_time / (double)all_time;
+  foutPortion << datasetname << " " << hashMapSize << " " << hash_portion << " " << put_portion << " " << kick_portion << endl;
+#endif
 
   return 0;
 

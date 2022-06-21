@@ -161,6 +161,7 @@ public:
     HashMap(){
         OcTreeKeyBufferSize = 0;
         hashSeed = 0x3afc8e77;
+        itemCount = 0;
     }
 
     void init(uint32_t _TABLE_SIZE, OcTree* _tree) {
@@ -237,6 +238,8 @@ public:
 
     void flush();
 
+    uint32_t ScalarHash(const OcTreeKey &key, const bool &value);
+
     // when the whole workflow ends, clean all the items that are stalk within the cache
     void cleanHashMap(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
 
@@ -274,6 +277,7 @@ public:
     BOBHash32 hashFunc;
     uint32_t clock;
     uint32_t currentPointCloud; // # of current inserting point cloud
+    uint32_t itemCount;
     OcTree* tree;
     uint32_t hashSeed;
     uint32_t OcTreeKeyBuffer[3][8];

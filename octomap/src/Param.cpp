@@ -4,6 +4,11 @@ uint32_t fetch_from_octree = 0;
 uint32_t insert_to_octree = 0;
 uint32_t insert_to_hashmap = 0;
 uint32_t insert_to_buffer = 0;
+uint32_t original_nodeupdate = 0;
+
+uint64_t hash_time = 0;
+uint64_t put_time = 0;
+uint64_t kick_time = 0;
 
 uint32_t big_prime3232[MAX_BIG_PRIME32] = {
 	20177, 20183, 20201, 20219, 20231, 20233, 20249, 20261, 20269, 20287,
