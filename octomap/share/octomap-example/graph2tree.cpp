@@ -278,7 +278,7 @@ int main(int argc, char** argv) {
   omp_set_num_threads(4);
 #endif
 #if USE_CACHE
-  string filename = "/home/peiqing/Dataset/Octomap/" + datasetname + ".txt";
+  string filename = "/home/peiqing/Dataset/Octomap/OctreeInsertion/" + datasetname + ".txt";
   Cache* myCache = new Cache(hashMapSize, tree, filename);
 #if ONE_THREAD
 #else
