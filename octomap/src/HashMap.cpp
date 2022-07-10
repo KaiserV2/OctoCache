@@ -191,44 +191,6 @@ void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashV
 
 
 
-
-// store 8 keys and compute the hash in parallel
-void HashMap::store(const OcTreeKey &key, const bool &value){
-#if DEBUG3
-    if (currentPointCloud == 1){
-        printf("Hash value is %u\n", value);
-    }
-#endif 
-    BufferedPairs[OcTreeKeyBufferSize] = OcTreeKeyValuePair(key, value);
-    OcTreeKeyBuffer[0][OcTreeKeyBufferSize] = uint32_t(key.k[0]);
-    OcTreeKeyBuffer[1][OcTreeKeyBufferSize] = uint32_t(key.k[1]);
-    OcTreeKeyBuffer[2][OcTreeKeyBufferSize] = uint32_t(key.k[2]);
-    OcTreeKeyBufferSize++;
-    
-    if (OcTreeKeyBufferSize == 8) {
-        uint32_t hashValue[8];
-        murmur3<3>::parallel(OcTreeKeyBuffer[0], hashSeed, hashValue);
-        for (int i = 0; i < 8; ++i) {
-            put(BufferedPairs[i].key, BufferedPairs[i].value, hashValue[i] % TABLE_SIZE);
-        }
-        OcTreeKeyBufferSize = 0;
-    } 
-    else{
-        return;
-    }
-
-}
-
-// flush the "less than 8" keys in the buffer
-void HashMap::flush() {
-    uint32_t hashValue[8];
-    murmur3<3>::parallel(OcTreeKeyBuffer[0], hashSeed, hashValue);
-    for (int i = 0; i < OcTreeKeyBufferSize; ++i) {
-        put(BufferedPairs[i].key, BufferedPairs[i].value, hashValue[i] % TABLE_SIZE);
-    }
-    OcTreeKeyBufferSize = 0;
-}
-
 uint32_t HashMap::ScalarHash(const OcTreeKey &key, const bool &value){
     uint32_t keys[2] = {0, 0};
     memcpy((uint16_t*)keys, &key.k[0], 6);

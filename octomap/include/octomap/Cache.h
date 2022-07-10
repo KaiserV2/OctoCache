@@ -39,10 +39,10 @@ public:
         tree = _tree;
         pktCount = 0; // here pkt count means the number of "duplicated insertions"
         clockWait = _clockWait; // make it 2^n, the default is 90k / 7k
-        fout.open(file);
+        // fout.open(file);
     } 
     ~Cache() {
-        fout.close();
+        // fout.close();
     }
     
     void ProcessPkt(const OcTreeKey &key, const bool &value);

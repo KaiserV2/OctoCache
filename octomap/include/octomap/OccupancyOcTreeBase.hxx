@@ -36,6 +36,7 @@
 #include "Cache.h"
 #include <stdlib.h>
 #include <omp.h>
+#include <fstream>
 
 
 #include <octomap/MCTables.h>
@@ -125,12 +126,20 @@ namespace octomap {
       computeUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
     // insert data into tree  -----------------------
     
+
+    std::fstream fout;
+    fout.open("/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/2.txt", std::ios_base::app);
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
+      fout << it->k[0] << " " << it->k[1] << " " << it->k[2] << " " << 0 << std::endl;
       updateNode(*it, false, lazy_eval);
     }
     for (KeySet::iterator it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
+      fout << it->k[0] << " " << it->k[1] << " " << it->k[2] << " " << 1 << std::endl;
       updateNode(*it, true, lazy_eval);
     }
+
+    fout << "next" << std::endl;
+
     original_nodeupdate += free_cells.size();
     original_nodeupdate += occupied_cells.size();
     // std::cout << free_cells.size() + occupied_cells.size() << " octree insertions" << std::endl;
@@ -295,7 +304,6 @@ namespace octomap {
       } // end bbx case
 
     } // end for all points, end of parallel OMP loop
-    myCache->myHashMap.flush();
   }
 
 

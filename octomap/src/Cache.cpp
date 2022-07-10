@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include <thread>
 #include <sys/time.h>
-#include <x86intrin.h>
+// #include <x86intrin.h>
 
 #define DEBUG3 false 
 
@@ -64,7 +64,7 @@ namespace octomap{
 #endif
                 OcTreeKey key = item.key;
                 bool occupancy = item.occupancy;
-                fout << key.k[0] << " " << key.k[1] << " " << key.k[2] << occupancy << std::endl;
+                // fout << key.k[0] << " " << key.k[1] << " " << key.k[2] << occupancy << std::endl;
                 if (occupancy == true) {
                     // its an occupied voxel
                     myCache->tree->updateNode(key, true, lazy_eval);

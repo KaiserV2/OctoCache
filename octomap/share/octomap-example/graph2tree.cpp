@@ -205,7 +205,7 @@ int main(int argc, char** argv) {
       printUsage(argv[0]);
     }
   }
-  string graphFilename = "/home/peiqing/Dataset/Octomap/" + datasetname + ".graph";
+  string graphFilename = "/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/" + datasetname + ".graph";
   if (graphFilename == "" || treeFilename == "") {
     printUsage(argv[0]);
   }
@@ -278,7 +278,7 @@ int main(int argc, char** argv) {
   omp_set_num_threads(4);
 #endif
 #if USE_CACHE
-  string filename = "/home/peiqing/Dataset/Octomap/" + datasetname + ".txt";
+  string filename = "/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/" + datasetname + ".txt";
   Cache* myCache = new Cache(hashMapSize, tree, filename);
 #if ONE_THREAD
 #else
@@ -296,8 +296,8 @@ int main(int argc, char** argv) {
   size_t numScans = graph->size(); 
   size_t currentScan = 1;
   for (ScanGraph::iterator scan_it = graph->begin(); scan_it != graph->end(); scan_it++) {
-    // if (max_scan_no > 0) cout << "("<<currentScan << "/" << max_scan_no << ") " << flush;
-    // else cout << "("<<currentScan << "/" << numScans << ") " << flush;
+    if (max_scan_no > 0) cout << "("<<currentScan << "/" << max_scan_no << ") " << flush;
+    else cout << "("<<currentScan << "/" << numScans << ") " << flush;
     if (simpleUpdate)
       tree->insertPointCloudRays((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange);
     else{

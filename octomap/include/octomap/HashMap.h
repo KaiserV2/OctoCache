@@ -234,10 +234,6 @@ public:
     // void put(const OcTreeKey &key, const bool &value);
     void put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue);
 
-    void store(const OcTreeKey &key, const bool &value);
-
-    void flush();
-
     uint32_t ScalarHash(const OcTreeKey &key, const bool &value);
 
     // when the whole workflow ends, clean all the items that are stalk within the cache
