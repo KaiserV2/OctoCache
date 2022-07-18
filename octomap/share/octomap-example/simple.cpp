@@ -38,14 +38,111 @@
  */
 
 #include <octomap/OcTree.h>
+#include <octomap/OcTreeKey.h>
 
 #include <iostream>
+#include <string.h>
+#include <fstream>
+#include <algorithm>
 
-using namespace std;
 using namespace octomap;
 
-int main() {
-  OcTree* tree = new OcTree(0.1);
-  cout << 1 << endl;
-  return 0;
+
+
+
+std::string datasetname;
+OcTree* tree = new OcTree(0.1);
+std::ifstream fin;
+// OcTreeKey keys[6265381];
+// OcTreeKey keys[209517632];
+OcTreeKey keys[317490869];
+bool occupancy;
+uint32_t pktCount = 0;
+uint32_t pcCount = 0;
+
+bool ReadKey(std::ifstream& fin){
+    std::string line;
+    if (getline(fin, line)){
+        if (line == "next") {
+            if (getline(fin, line)){
+                pcCount++;
+                // std::cout << pcCount << std::endl;
+            }
+            else{
+                return false;
+            }
+        }
+        uint32_t pos1 = line.find(" ", 0);
+        uint32_t pos2 = line.find(" ", pos1 + 1);
+        uint32_t pos3 = line.find(" ", pos2 + 1);
+        
+        std::string k1 = line.substr(0, pos1);
+        std::string k2 = line.substr(pos1 + 1, pos2 - pos1 - 1);
+        std::string k3 = line.substr(pos2 + 1, pos3 - pos2 - 1);
+        std::string occ = line.substr(pos3 + 1, 1);
+        keys[pktCount] = OcTreeKey(stoi(k1), stoi(k2), stoi(k3));
+        pktCount++;
+        occupancy = stoi(occ);
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+
+int main(int argc, char** argv) {
+    int arg = 0;
+    std::string graphFileNum;
+    std::string mapSizeNum;
+    std::string hashMapNum;
+    std::string hashMapSize;
+
+    while (++arg < argc) {
+        if (! strcmp(argv[arg], "-i")){
+            graphFileNum = std::string(argv[++arg]);
+            if (graphFileNum == "1"){
+                datasetname = "1";
+            }
+            else if (graphFileNum == "2"){
+                datasetname = "2";
+            }
+            else if (graphFileNum == "3"){
+                datasetname = "3";
+            }
+            else{ // default
+                datasetname = "1";
+            }
+        }
+        if (! strcmp(argv[arg], "-s")){
+            hashMapNum = std::string(argv[++arg]);
+            if (hashMapNum == "4"){
+                hashMapSize = "4";
+            }
+            else if (hashMapNum == "6"){
+                hashMapSize = "6";
+            }
+            else if (hashMapNum == "8"){
+                hashMapSize = "8";
+            }
+        }
+    }
+    std::string fileName;
+    if(hashMapNum == ""){
+        fileName = "/home/peiqing/Dataset/Octomap/OctreeInsertion/"+datasetname+".txt";
+    }
+    else{
+        fileName = "/home/peiqing/Dataset/Octomap/OctreeInsertion/"+datasetname+"hash"+hashMapSize+".txt";
+    }
+    std::cout << fileName << std::endl;
+    fin.open(fileName);
+    while(ReadKey(fin)){
+        
+    }
+    // std::random_shuffle(&keys[0], &keys[pktCount - 1]);
+    for (int i = 0; i < pktCount; i++) {
+        tree->updateNode(keys[i], occupancy, false);
+    }
+    std::cout << pktCount << std::endl;
+    return 0;
 }

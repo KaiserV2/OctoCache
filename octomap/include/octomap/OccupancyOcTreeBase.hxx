@@ -126,9 +126,14 @@ namespace octomap {
       computeUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
     // insert data into tree  -----------------------
     
+<<<<<<< HEAD
 
     std::fstream fout;
     fout.open("/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/2.txt", std::ios_base::app);
+=======
+    std::fstream fout;
+    fout.open("/home/peiqing/Dataset/Octomap/OctreeInsertion/3.txt", std::ios_base::app);
+>>>>>>> 264d64c90dd78e2c6d98e2a75e1f6f03b635a6e8
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
       fout << it->k[0] << " " << it->k[1] << " " << it->k[2] << " " << 0 << std::endl;
       updateNode(*it, false, lazy_eval);
@@ -140,6 +145,11 @@ namespace octomap {
 
     fout << "next" << std::endl;
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 264d64c90dd78e2c6d98e2a75e1f6f03b635a6e8
     original_nodeupdate += free_cells.size();
     original_nodeupdate += occupied_cells.size();
     // std::cout << free_cells.size() + occupied_cells.size() << " octree insertions" << std::endl;
