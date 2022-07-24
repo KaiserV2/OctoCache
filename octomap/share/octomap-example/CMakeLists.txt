@@ -12,6 +12,7 @@ include_directories(${OCTOMAP_INCLUDE_DIRS})
 link_directories(${OCTOMAP_LIBRARY_DIRS})
 link_libraries(${OCTOMAP_LIBRARIES})
 
-ADD_EXECUTABLE(tmp tmp.cpp)
+# ADD_EXECUTABLE(tmp tmp.cpp)
 ADD_EXECUTABLE(graph2tree graph2tree.cpp)
 ADD_EXECUTABLE(testspeed testspeed.cpp)
+ADD_EXECUTABLE(testMorton testMorton.cpp)

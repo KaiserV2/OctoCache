@@ -25,12 +25,13 @@ namespace octomap{
 #endif
 
     void Cache::ProcessPkt(const OcTreeKey &key, const bool &value){
-        // uint64_t point1, point2, point3, point4;
-        // point1 = __rdtsc();
-        uint32_t hashValue = this->myHashMap.ScalarHash(key, value);
-        // point2 = __rdtsc();
-        this->myHashMap.put(key, value, hashValue % this->myHashMap.TABLE_SIZE);
-        // point3 = __rdtsc();
+        uint64_t point1, point2, point3, point4;
+        point1 = __rdtsc();
+        uint32_t hashValue = this->myHashMap.ScalarHash(key);
+        // uint32_t hashValue = this->myHashMap.MortonHash(key);
+        point2 = __rdtsc();
+        this->myHashMap.put(key, value, hashValue);
+        point3 = __rdtsc();
         pktCount++;
         if (pktCount % clockWait == 0) {
 #if ONE_THREAD
@@ -38,17 +39,17 @@ namespace octomap{
             this->myHashMap.KickToOctree();
 #else
             this->myHashMap.KickToBuffer(&buffer, bufferSize);
-            // point4 = __rdtsc();
-            // kick_time +=  point4 - point3;
+            point4 = __rdtsc();
+            kick_time +=  point4 - point3;
 #endif
         }
-        // hash_time +=  point2 - point1;
-        // put_time +=  point3 - point2;
+        hash_time +=  point2 - point1;
+        put_time +=  point3 - point2;
     }
 
     void DigestBuffer(std::thread* thisThd, Cache* myCache) {
 #ifdef __linux__
-        if(!setaffinity(thisThd, 20))
+        if(!setaffinity(thisThd, 0))
             return;
 #endif
         while((myCache->run) || (myCache->bufferSize != 0)) {
@@ -59,34 +60,14 @@ namespace octomap{
                 break;
             }
             while (myCache->buffer.try_dequeue(item)) { 
-#if DEBUG1
-                std::cout << "Putting item to octree!" << std::endl;
-#endif
+                uint64_t point1, point2;
+                point1 = __rdtsc();
                 OcTreeKey key = item.key;
-                bool occupancy = item.occupancy;
-<<<<<<< HEAD
-                // fout << key.k[0] << " " << key.k[1] << " " << key.k[2] << occupancy << std::endl;
-=======
-                myCache->fout << key.k[0] << " " << key.k[1] << " " << key.k[2] << " " << occupancy << std::endl;
->>>>>>> 264d64c90dd78e2c6d98e2a75e1f6f03b635a6e8
-                if (occupancy == true) {
-                    // its an occupied voxel
-                    myCache->tree->updateNode(key, true, lazy_eval);
-                    myCache->bufferSize--;
-                    // std::cout << myCache->bufferSize << std::endl;
-#if DEBUG1
-                    std::cout << "Done octree insertion" << std::endl;
-#endif
-                }
-                else {
-                    // a free voxel
-                    myCache->tree->updateNode(key, false, lazy_eval);
-                    myCache->bufferSize--;
-                    // std::cout << myCache->bufferSize << std::endl;
-#if DEBUG1
-                    std::cout << "Done octree insertion" << std::endl;
-#endif
-                }
+                // std::cout << key.k[0] << " " << key.k[1] << " " << key.k[2] << " " << occupancy << std::endl;
+                myCache->tree->updateNode(key, item.occupancy, lazy_eval);
+                myCache->bufferSize--;
+                point2 = __rdtsc();
+                insert_time +=  point2 - point1;
 #if DETAIL_COUNT
                     insert_to_octree++;
 #endif

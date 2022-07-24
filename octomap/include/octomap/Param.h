@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define USE_CACHE false
+#define USE_NEW_CACHE true
 #define ONE_THREAD false // the 1 threaded version of cache
 #define DETAIL_LOG false
 #define DEBUG1 false
@@ -24,6 +25,8 @@ extern uint32_t original_nodeupdate;
 extern uint64_t hash_time;
 extern uint64_t put_time;
 extern uint64_t kick_time;
+extern uint64_t insert_time;
+extern uint64_t raytrace_time;
 
 #define MAX_PRIME32 1229
 #define MAX_BIG_PRIME32 50
@@ -44,5 +47,8 @@ extern uint32_t prime32[MAX_PRIME32];
   b -= c; b -= a; b ^= (a<<10); \
   c -= a; c -= b; c ^= (b>>15); \
 }
+
+uint64_t __rdtsc(void);
+
 
 #endif

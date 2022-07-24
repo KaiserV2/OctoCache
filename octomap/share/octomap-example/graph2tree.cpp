@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
   double res = 0.1;
   string datasetname = "fr_079";
   string treeFilename = "output";
-  uint32_t hashMapSize = 1000000;
+  uint32_t hashMapSize = 1 << 15;
   double maxrange = -1;
   int max_scan_no = -1;
   bool detailedLog = false;
@@ -277,9 +277,9 @@ int main(int argc, char** argv) {
 #ifdef _OPENMP
   omp_set_num_threads(4);
 #endif
-#if USE_CACHE
+#if USE_CACHE | USE_NEW_CACHE
   string filename = "/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/" + datasetname + ".txt";
-  Cache* myCache = new Cache(hashMapSize, tree, filename);
+  Cache* myCache = new Cache(hashMapSize, tree, filename, 2);
 #if ONE_THREAD
 #else
   myCache->StartThread();
@@ -295,13 +295,15 @@ int main(int argc, char** argv) {
   gettimeofday(&start, NULL);  // start timer
   size_t numScans = graph->size(); 
   size_t currentScan = 1;
+  fstream fout;
+  fout.open("/proj/softmeasure-PG0/Peiqing/Test/distribution.txt");
   for (ScanGraph::iterator scan_it = graph->begin(); scan_it != graph->end(); scan_it++) {
     if (max_scan_no > 0) cout << "("<<currentScan << "/" << max_scan_no << ") " << flush;
     else cout << "("<<currentScan << "/" << numScans << ") " << flush;
     if (simpleUpdate)
       tree->insertPointCloudRays((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange);
     else{
-#if USE_CACHE
+#if USE_CACHE | USE_NEW_CACHE
       tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), myCache, maxrange, false, discretize);
 #else
       tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange, false, discretize);
@@ -321,20 +323,20 @@ int main(int argc, char** argv) {
     if ((max_scan_no > 0) && (currentScan == (unsigned int) max_scan_no))
       break;
     currentScan++;
+    // for (int i = 0; i < myCache->myHashMap.TABLE_SIZE; i++) {
+    //   fout << myCache->myHashMap.table[i].size() << ",";
+    // }
+    // fout << endl;
   }
   gettimeofday(&stop, NULL);  // stop timer
 #if DEBUG2
   cout << endl << myCache->bufferSize << endl;
 #endif
 
-#if USE_CACHE
-#if ONE_THREAD
-  myCache->EndOneThread();
-#else
+#if USE_CACHE | USE_NEW_CACHE
   myCache->EndThread();
 #endif
-  gettimeofday(&stop1, NULL);  // stop timer
-#endif
+gettimeofday(&stop1, NULL);  // stop timer
 #if DETAIL_COUNT
   cout << "fetch_from_octree " << fetch_from_octree << endl;
   cout << "insert_to_octree " << insert_to_octree << endl;
@@ -344,25 +346,25 @@ int main(int argc, char** argv) {
 
   double time_to_insert = (stop.tv_sec - stop1.tv_sec) + 1.0e-6 *(stop.tv_usec - stop1.tv_usec);
   cout << endl <<  "Buffer digesting time " << time_to_insert << " sec" << endl;
-#if USE_CACHE
+
   double time_to_insert1 = (stop1.tv_sec - start.tv_sec) + 1.0e-6 *(stop1.tv_usec - start.tv_usec);
   cout << "Total run time " << time_to_insert1 << " sec" << endl;
-#else
+
   cout << "updated " << original_nodeupdate << " nodes in total"<< endl;
-#endif
   // get rid of graph in mem before doing anything fancy with tree (=> memory)
   delete graph;
   if (logfile.is_open())
     logfile.close();
 
-#if USE_CACHE
-  fstream foutPortion;
-  foutPortion.open("/home/peiqing/Test/Octomap/HashPortion/Log.txt", ios_base::app);
+
+cout << "octree insertion time " << insert_time << endl;
+cout << "ray tracing time" << raytrace_time << endl;
+#if USE_CACHE | USE_NEW_CACHE
   uint64_t all_time = hash_time + put_time + kick_time;
   double hash_portion = (double)hash_time / (double)all_time;
   double put_portion = (double)put_time / (double)all_time;
   double kick_portion = (double)kick_time / (double)all_time;
-  foutPortion << datasetname << " " << hashMapSize << " " << hash_portion << " " << put_portion << " " << kick_portion << endl;
+  cout << datasetname << " " << hash_time << " " << put_time << " " << kick_time << endl;
 #endif
 
   return 0;

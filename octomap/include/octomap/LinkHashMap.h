@@ -4,7 +4,6 @@
 #include "Param.h"
 #include "BOBHash32.h"
 #include <queue>
-#include <vector>
 #include <atomic>
 #include <iostream>
 #include <bitset>
@@ -127,11 +126,11 @@ public:
 class HashNode {
 public:
     HashNode(const OcTreeKey &_key, const MyValue& _myValue) {
+        // only happens when a new node is created
+        next = NULL;
         key = _key;
         myValue = _myValue;
     }
-
-    HashNode(){}
 
     OcTreeKey getKey() const {
         return key;
@@ -141,9 +140,20 @@ public:
         return myValue;
     }
 
+    HashNode *getNext() const {
+        return next;
+    }
+
+    void setNext(HashNode *next) {
+        this->next = next;
+    }
+
 public:
+    // key-value pair
     OcTreeKey key;
     MyValue myValue;
+    // next bucket with the same key
+    HashNode *next;
 };
 
 // Hash map class template
@@ -151,58 +161,127 @@ class HashMap {
 public:
 
     HashMap(){
+        OcTreeKeyBufferSize = 0;
+        hashSeed = 0x3afc8e77;
         itemCount = 0;
     }
 
     void init(uint32_t _TABLE_SIZE, OcTree* _tree) {
         // construct zero initialized hash table of size
         TABLE_SIZE = _TABLE_SIZE;
-        table = new std::vector<HashNode>[TABLE_SIZE];
+        table = new HashNode *[TABLE_SIZE]();
+#if DEBUG1
+        printf("HashMap created!\n");
+        // printf("Initialized with seed %lu", &x);
+#endif
+        hashFunc.initialize(122);
         clock = 0;
         currentPointCloud = 0;
         tree = _tree;
     }
 
-    ~HashMap() {
-        delete[] table;
+    unsigned long MyKeyHash(const OcTreeKey& key)
+    {
+// #if DETAIL_LOG
+//         printf("get to MyKeyHash\n");
+//         printf("%lu\n",sizeof(key_type) * 3);
+//         std::cout << key.k << std::endl;
+//         std::cout << &(key.k[0]) << std::endl;
+//         std::cout << &(key.k[1]) << std::endl;
+//         std::cout << &(key.k[2]) << std::endl;
+// #endif
+        uint32_t tmp = hashFunc.run((const char *)(&(key.k[0])), sizeof(key_type) * 3);
+        uint32_t ans = tmp % TABLE_SIZE;
+#if DETAIL_LOG
+        printf("hash value %d\n", ans);
+#endif
+        return ans;
     }
 
-    float get(const OcTreeKey &key) {
-        // this function waits to be finished
-        // search each bucket after another, stops if found 10 consecutive full buckets
-        unsigned long hashValue = MortonHash(key);
-        for (auto it = table[hashValue].begin(); it != table[hashValue].end(); it++) {
-            if (it->getKey() == key) {
-                return it->getValue().accumulateOccupancy;
+    ~HashMap() {
+        // destroy all buckets one by one
+        for (uint32_t i = 0; i < TABLE_SIZE; ++i) {
+            HashNode *entry = table[i];
+            while (entry != NULL) {
+                HashNode *prev = entry;
+                entry = entry->getNext();
+                delete prev;
             }
+            table[i] = NULL;
         }
-        // it is impossible to return a so large number as 100, note as not found
-        return 100;
+        // destroy the hash table
+        delete [] table;
+    }
+
+    bool get(const OcTreeKey &key, MyValue &value) {
+        unsigned long hashValue = MyKeyHash(key);
+        HashNode *entry = table[hashValue];
+
+        while (entry != NULL) {
+            if (entry->getKey() == key) {
+                value = entry->getValue();
+                return true;
+            }
+            entry = entry->getNext();
+        }
+        return false;
+    }
+
+    void test() {
+        printf("The HashMap has size %d", TABLE_SIZE);
     }
 
     void KickToBuffer(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
 
+    // void put(const OcTreeKey &key, const bool &value);
     void put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue);
 
-    uint32_t ScalarHash(const OcTreeKey &key);
+    uint32_t ScalarHash(const OcTreeKey &key, const bool &value);
 
-    uint32_t MortonHash(const OcTreeKey &key);
+    uint32_t MortonHash(const OcTreeKey &key, const bool &value);
 
     // when the whole workflow ends, clean all the items that are stalk within the cache
     void cleanHashMap(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
+
+    void remove(const OcTreeKey &key) {
+        unsigned long hashValue = MyKeyHash(key);
+        HashNode *prev = NULL;
+        HashNode *entry = table[hashValue];
+
+        while (entry != NULL && entry->getKey() != key) {
+            prev = entry;
+            entry = entry->getNext();
+        }
+
+        if (entry == NULL) {
+            // key not found
+            return;
+        }
+        else {
+            if (prev == NULL) {
+                // remove first bucket of the list
+                table[hashValue] = entry->getNext();
+            } else {
+                prev->setNext(entry->getNext());
+            }
+            delete entry;
+        }
+    }
 
     void KickToOctree();
 
 public:
     // hash table
-    std::vector<HashNode> *table;
+    HashNode **table;
     uint32_t TABLE_SIZE;
-    uint32_t Columns = 4;
+    BOBHash32 hashFunc;
     uint32_t clock;
     uint32_t currentPointCloud; // # of current inserting point cloud
     uint32_t itemCount;
     OcTree* tree;
+    uint32_t hashSeed;
     uint32_t OcTreeKeyBuffer[3][8];
+    uint32_t OcTreeKeyBufferSize;
     OcTreeKeyValuePair BufferedPairs[8];
 };
 

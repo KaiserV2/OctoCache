@@ -9,6 +9,24 @@ uint32_t original_nodeupdate = 0;
 uint64_t hash_time = 0;
 uint64_t put_time = 0;
 uint64_t kick_time = 0;
+uint64_t insert_time = 0;
+uint64_t raytrace_time = 0;
+
+uint64_t __rdtsc(void)
+{
+    uint64_t val;
+
+    /*
+     * According to ARM DDI 0487F.c, from Armv8.0 to Armv8.5 inclusive, the
+     * system counter is at least 56 bits wide; from Armv8.6, the counter
+     * must be 64 bits wide.  So the system counter could be less than 64
+     * bits wide and it is attributed with the flag 'cap_user_time_short'
+     * is true.
+     */
+    asm volatile("mrs %0, cntvct_el0" : "=r" (val));
+
+    return val;
+}
 
 uint32_t big_prime3232[MAX_BIG_PRIME32] = {
 	20177, 20183, 20201, 20219, 20231, 20233, 20249, 20261, 20269, 20287,

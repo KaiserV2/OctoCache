@@ -97,62 +97,56 @@ namespace octomap {
     else
       computeUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange, myCache);
 
-#if USE_CACHE
-    pointCloudCount++;
-    myCache->myHashMap.currentPointCloud++;
-    return;
-    
-#endif
 
+#if USE_NEW_CACHE
     std::cout << "inserting into octree" << std::endl;
     // insert data into tree  -----------------------
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
-      updateNode(*it, false, lazy_eval);
+      myCache->ProcessPkt(*it, 0);
     }
     for (KeySet::iterator it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
-      updateNode(*it, true, lazy_eval);
+      myCache->ProcessPkt(*it, 1);
     }
+    
+#endif
+    pointCloudCount++;
+    myCache->myHashMap.currentPointCloud++;
   }
+
 
 
   template <class NODE>
   void OccupancyOcTreeBase<NODE>::insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin,
                                              double maxrange, bool lazy_eval, bool discretize) {
 
+    
+    uint64_t point1, point2, point3, point4;
+    point3 = __rdtsc();
     KeySet free_cells, occupied_cells;
     if (discretize)
       computeDiscreteUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
     else
       computeUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
     // insert data into tree  -----------------------
-    
-<<<<<<< HEAD
-
-    std::fstream fout;
-    fout.open("/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/2.txt", std::ios_base::app);
-=======
-    std::fstream fout;
-    fout.open("/home/peiqing/Dataset/Octomap/OctreeInsertion/3.txt", std::ios_base::app);
->>>>>>> 264d64c90dd78e2c6d98e2a75e1f6f03b635a6e8
+    point4 = __rdtsc();
+    raytrace_time +=  point4 - point3;
+    point1 = __rdtsc();
+    // std::fstream fout;
+    // fout.open("/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/2.txt", std::ios_base::app);
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
-      fout << it->k[0] << " " << it->k[1] << " " << it->k[2] << " " << 0 << std::endl;
+      // fout << it->k[0] << " " << it->k[1] << " " << it->k[2] << " " << 0 << std::endl;
       updateNode(*it, false, lazy_eval);
     }
     for (KeySet::iterator it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
-      fout << it->k[0] << " " << it->k[1] << " " << it->k[2] << " " << 1 << std::endl;
+      // fout << it->k[0] << " " << it->k[1] << " " << it->k[2] << " " << 1 << std::endl;
       updateNode(*it, true, lazy_eval);
     }
+    point2 = __rdtsc();
+    insert_time +=  point2 - point1;
+    // fout << "next" << std::endl;
 
-    fout << "next" << std::endl;
-
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 264d64c90dd78e2c6d98e2a75e1f6f03b635a6e8
     original_nodeupdate += free_cells.size();
     original_nodeupdate += occupied_cells.size();
-    // std::cout << free_cells.size() + occupied_cells.size() << " octree insertions" << std::endl;
   }
 
   template <class NODE>
