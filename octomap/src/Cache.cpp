@@ -5,7 +5,7 @@
 #include <sys/time.h>
 // #include <x86intrin.h>
 
-#define DEBUG3 false 
+#define CPU_CYCLES true
 
 namespace octomap{
 
@@ -25,13 +25,19 @@ namespace octomap{
 #endif
 
     void Cache::ProcessPkt(const OcTreeKey &key, const bool &value){
+#if CPU_CYCLES
         uint64_t point1, point2, point3, point4;
         point1 = __rdtsc();
-        uint32_t hashValue = this->myHashMap.ScalarHash(key);
-        // uint32_t hashValue = this->myHashMap.MortonHash(key);
+#endif
+        // uint32_t hashValue = this->myHashMap.ScalarHash(key);
+        uint32_t hashValue = this->myHashMap.MortonHash(key);
+#if CPU_CYCLES
         point2 = __rdtsc();
+#endif
         this->myHashMap.put(key, value, hashValue);
+#if CPU_CYCLES
         point3 = __rdtsc();
+#endif
         pktCount++;
         if (pktCount % clockWait == 0) {
 #if ONE_THREAD
@@ -39,12 +45,16 @@ namespace octomap{
             this->myHashMap.KickToOctree();
 #else
             this->myHashMap.KickToBuffer(&buffer, bufferSize);
+#if CPU_CYCLES
             point4 = __rdtsc();
             kick_time +=  point4 - point3;
 #endif
+#endif
         }
+#if CPU_CYCLES
         hash_time +=  point2 - point1;
         put_time +=  point3 - point2;
+#endif
     }
 
     void DigestBuffer(std::thread* thisThd, Cache* myCache) {
@@ -60,14 +70,18 @@ namespace octomap{
                 break;
             }
             while (myCache->buffer.try_dequeue(item)) { 
+#if CPU_CYCLES
                 uint64_t point1, point2;
                 point1 = __rdtsc();
+#endif
                 OcTreeKey key = item.key;
                 // std::cout << key.k[0] << " " << key.k[1] << " " << key.k[2] << " " << occupancy << std::endl;
                 myCache->tree->updateNode(key, item.occupancy, lazy_eval);
                 myCache->bufferSize--;
+#if CPU_CYCLES
                 point2 = __rdtsc();
                 insert_time +=  point2 - point1;
+#endif
 #if DETAIL_COUNT
                     insert_to_octree++;
 #endif

@@ -1,7 +1,7 @@
 #include <octomap/HashMap.h>
 #include <octomap/OcTree.h>
 
-#define DEBUG3 false
+#define DEBUG3 true
 
 namespace octomap{
 

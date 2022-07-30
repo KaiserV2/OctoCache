@@ -42,6 +42,7 @@
 #include <octomap/Cache.h>
 #include <octomap/Param.h>
 #include <omp.h>
+#include <sys/time.h>
 
 using namespace std;
 using namespace octomap;
@@ -114,7 +115,7 @@ int main(int argc, char** argv) {
   double res = 0.1;
   string datasetname = "fr_079";
   string treeFilename = "output";
-  uint32_t hashMapSize = 1 << 15;
+  uint32_t hashMapSize = 1 << 16;
   double maxrange = -1;
   int max_scan_no = -1;
   bool detailedLog = false;
@@ -163,7 +164,7 @@ int main(int argc, char** argv) {
       else if (mapsize == "2"){
         hashMapSize *= 100;
       }
-      else{ // default
+      else{ 
         hashMapSize /= 1;
       }
     }
@@ -279,7 +280,7 @@ int main(int argc, char** argv) {
 #endif
 #if USE_CACHE | USE_NEW_CACHE
   string filename = "/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/" + datasetname + ".txt";
-  Cache* myCache = new Cache(hashMapSize, tree, filename, 2);
+  Cache* myCache = new Cache(hashMapSize, tree, filename, 4);
 #if ONE_THREAD
 #else
   myCache->StartThread();
@@ -293,13 +294,14 @@ int main(int argc, char** argv) {
 
 
   gettimeofday(&start, NULL);  // start timer
+  uint64_t point1 = __rdtsc();
   size_t numScans = graph->size(); 
   size_t currentScan = 1;
   fstream fout;
   fout.open("/proj/softmeasure-PG0/Peiqing/Test/distribution.txt");
   for (ScanGraph::iterator scan_it = graph->begin(); scan_it != graph->end(); scan_it++) {
-    if (max_scan_no > 0) cout << "("<<currentScan << "/" << max_scan_no << ") " << flush;
-    else cout << "("<<currentScan << "/" << numScans << ") " << flush;
+    // if (max_scan_no > 0) cout << "("<<currentScan << "/" << max_scan_no << ") " << flush;
+    // else cout << "("<<currentScan << "/" << numScans << ") " << flush;
     if (simpleUpdate)
       tree->insertPointCloudRays((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange);
     else{
@@ -337,6 +339,7 @@ int main(int argc, char** argv) {
   myCache->EndThread();
 #endif
 gettimeofday(&stop1, NULL);  // stop timer
+uint64_t point2 = __rdtsc();
 #if DETAIL_COUNT
   cout << "fetch_from_octree " << fetch_from_octree << endl;
   cout << "insert_to_octree " << insert_to_octree << endl;
@@ -348,7 +351,7 @@ gettimeofday(&stop1, NULL);  // stop timer
   cout << endl <<  "Buffer digesting time " << time_to_insert << " sec" << endl;
 
   double time_to_insert1 = (stop1.tv_sec - start.tv_sec) + 1.0e-6 *(stop1.tv_usec - start.tv_usec);
-  cout << "Total run time " << time_to_insert1 << " sec" << endl;
+  cout << "Total run time " << time_to_insert1 << " sec " << point2 - point1 << " cpu cycles" << endl;
 
   cout << "updated " << original_nodeupdate << " nodes in total"<< endl;
   // get rid of graph in mem before doing anything fancy with tree (=> memory)
@@ -358,7 +361,7 @@ gettimeofday(&stop1, NULL);  // stop timer
 
 
 cout << "octree insertion time " << insert_time << endl;
-cout << "ray tracing time" << raytrace_time << endl;
+cout << "ray tracing time " << raytrace_time << endl;
 #if USE_CACHE | USE_NEW_CACHE
   uint64_t all_time = hash_time + put_time + kick_time;
   double hash_portion = (double)hash_time / (double)all_time;

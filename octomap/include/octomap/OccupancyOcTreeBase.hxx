@@ -99,7 +99,6 @@ namespace octomap {
 
 
 #if USE_NEW_CACHE
-    std::cout << "inserting into octree" << std::endl;
     // insert data into tree  -----------------------
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
       myCache->ProcessPkt(*it, 0);
@@ -308,6 +307,9 @@ namespace octomap {
       } // end bbx case
 
     } // end for all points, end of parallel OMP loop
+#if USE_NEW_CACHE
+    duplicationCheck(free_cells, occupied_cells);
+#endif
   }
 
 
