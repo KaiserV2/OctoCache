@@ -78,6 +78,16 @@ void printUsage(char* self){
   exit(0);
 }
 
+void SpecifyThread(){
+    int s;
+    pthread_t thread;
+    cpu_set_t cpuset;
+    thread = pthread_self();
+    CPU_ZERO(&cpuset);
+    CPU_SET(1, &cpuset);
+    s = pthread_setaffinity_np(thread, sizeof(cpuset), &cpuset);
+}
+
 void calcThresholdedNodes(const OcTree* tree,
                           unsigned int& num_thresholded,
                           unsigned int& num_other)
@@ -116,6 +126,9 @@ int main(int argc, char** argv) {
   string datasetname = "fr_079";
   string treeFilename = "output";
   uint32_t hashMapSize = 1 << 16;
+  uint32_t clockSpeed = 1;
+  string ss;
+  string sk;
   double maxrange = -1;
   int max_scan_no = -1;
   bool detailedLog = false;
@@ -131,7 +144,7 @@ int main(int argc, char** argv) {
   double probMiss = emptyTree.getProbMiss();
   double probHit = emptyTree.getProbHit();
 
-
+  SpecifyThread();
   timeval start; 
   timeval stop;
   timeval stop1;  
@@ -142,31 +155,28 @@ int main(int argc, char** argv) {
       string graphFileNum = std::string(argv[++arg]);
       if (graphFileNum == "1"){
         datasetname = "fr_079";
+        hashMapSize = 1 << 17;
       }
       else if (graphFileNum == "2"){
         datasetname = "fr_campus";
+        hashMapSize = 1 << 22;
       }
       else if (graphFileNum == "3"){
         datasetname = "new_college";
+        hashMapSize = 1 << 12;
       }
       else{ // default
         datasetname = "fr_079";
+        hashMapSize = 1 << 17;
       }
     }
     else if (!strcmp(argv[arg], "-s")){ // specify the size of the hash table
-      string mapsize = std::string(argv[++arg]);
-      if (mapsize == "0"){
-        hashMapSize /= 100;
-      }
-      else if (mapsize == "1"){
-        hashMapSize /= 1;
-      }
-      else if (mapsize == "2"){
-        hashMapSize *= 100;
-      }
-      else{ 
-        hashMapSize /= 1;
-      }
+      ss = std::string(argv[++arg]);
+      hashMapSize *= stoi(ss);
+    }
+    else if (! strcmp(argv[arg], "-k")){
+      sk = std::string(argv[++arg]);
+      clockSpeed *= stoi(sk);
     }
     else if (!strcmp(argv[arg], "-o"))
       treeFilename = std::string(argv[++arg]);
@@ -206,7 +216,7 @@ int main(int argc, char** argv) {
       printUsage(argv[0]);
     }
   }
-  string graphFilename = "/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/" + datasetname + ".graph";
+  string graphFilename = "/home/peiqing/Dataset/Octomap/" + datasetname + ".graph";
   if (graphFilename == "" || treeFilename == "") {
     printUsage(argv[0]);
   }
@@ -280,7 +290,7 @@ int main(int argc, char** argv) {
 #endif
 #if USE_CACHE | USE_NEW_CACHE
   string filename = "/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/" + datasetname + ".txt";
-  Cache* myCache = new Cache(hashMapSize, tree, filename, 4);
+  Cache* myCache = new Cache(hashMapSize, tree, filename, clockSpeed);
 #if ONE_THREAD
 #else
   myCache->StartThread();
@@ -300,7 +310,7 @@ int main(int argc, char** argv) {
   fstream fout;
   fout.open("/proj/softmeasure-PG0/Peiqing/Test/distribution.txt");
   for (ScanGraph::iterator scan_it = graph->begin(); scan_it != graph->end(); scan_it++) {
-    // if (max_scan_no > 0) cout << "("<<currentScan << "/" << max_scan_no << ") " << flush;
+    if (max_scan_no > 0) cout << "("<<currentScan << "/" << max_scan_no << ") " << flush;
     // else cout << "("<<currentScan << "/" << numScans << ") " << flush;
     if (simpleUpdate)
       tree->insertPointCloudRays((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange);

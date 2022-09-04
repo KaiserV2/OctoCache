@@ -2,6 +2,8 @@
 #define PARAM_H
 
 #include <stdint.h>
+#include <mutex>
+#include <atomic>
 
 #define USE_CACHE false
 #define USE_NEW_CACHE true
@@ -14,6 +16,10 @@
 // #define _OPENMP
 const int DEFAULT_TABLE_SIZE = 20;
 #define SEED 19991228
+
+extern std::mutex mtx;
+extern std::atomic_bool lock;
+
 
 extern uint32_t fetch_from_octree;
 extern uint32_t insert_to_octree;
@@ -47,8 +53,6 @@ extern uint32_t prime32[MAX_PRIME32];
   b -= c; b -= a; b ^= (a<<10); \
   c -= a; c -= b; c ^= (b>>15); \
 }
-
-uint64_t __rdtsc(void);
 
 
 #endif

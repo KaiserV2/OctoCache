@@ -144,6 +144,7 @@ void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashV
             // create new hash node
             // first query the key into Octree
             double accumulateOccupancy;
+            assert(tree != nullptr);
             if (tree->search(key) == NULL) {
 #if DEBUG1
                 printf("find a NULL\n");

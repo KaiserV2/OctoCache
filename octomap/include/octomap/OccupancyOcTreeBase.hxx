@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <omp.h>
 #include <fstream>
+#include <x86intrin.h>
 
 
 #include <octomap/MCTables.h>
@@ -100,13 +101,14 @@ namespace octomap {
 
 #if USE_NEW_CACHE
     // insert data into tree  -----------------------
+    mtx.lock();
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
       myCache->ProcessPkt(*it, 0);
     }
     for (KeySet::iterator it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
       myCache->ProcessPkt(*it, 1);
     }
-    
+    mtx.unlock();
 #endif
     pointCloudCount++;
     myCache->myHashMap.currentPointCloud++;

@@ -95,63 +95,35 @@ public:
     }
 };
 
-class MyValue{
-public:
-    double accumulateOccupancy; // the past accumulated occupancy
-    bool currentOccupancy; // occupancy of the current point cloud
-    uint32_t currentPointCloud;
-    MyValue(){}
-    MyValue(double _accumulateOccupancy, bool _currentOccupancy, uint32_t _currentPointCloud){
-        accumulateOccupancy = _accumulateOccupancy;
-        currentOccupancy = _currentOccupancy;
-        currentPointCloud = _currentPointCloud;
-    }
-    MyValue(const MyValue& m) {
-        accumulateOccupancy = m.accumulateOccupancy;
-        currentOccupancy = m.currentOccupancy;
-        currentPointCloud = m.currentPointCloud;
-    }
-    void compress(double prob_miss_log, double prob_hit_log) {
-        // merge current info into accumulate info
-        if (currentOccupancy == false) {
-            accumulateOccupancy += prob_miss_log;
-        }
-        else{
-            accumulateOccupancy += prob_hit_log;
-        }
-    }
-};
 
 
 // Hash node class template
 class HashNode {
 public:
-    HashNode(const OcTreeKey &_key, const MyValue& _myValue) {
+    HashNode(const OcTreeKey &_key, const double& _occupancy) {
         key = _key;
-        myValue = _myValue;
+        occupancy = _occupancy;
     }
 
     HashNode(){}
+
 
     OcTreeKey getKey() const {
         return key;
     }
 
-    MyValue getValue() const {
-        return myValue;
-    }
-
 public:
     OcTreeKey key;
-    MyValue myValue;
+    double occupancy;
 };
+
 
 // Hash map class template
 class HashMap {
 public:
 
     HashMap(){
-        itemCount = 0;
+
     }
 
     void init(uint32_t _TABLE_SIZE, OcTree* _tree) {
@@ -173,7 +145,7 @@ public:
         unsigned long hashValue = MortonHash(key);
         for (auto it = table[hashValue].begin(); it != table[hashValue].end(); it++) {
             if (it->getKey() == key) {
-                return it->getValue().accumulateOccupancy;
+                return it->occupancy;
             }
         }
         // it is impossible to return a so large number as 100, note as not found
@@ -188,6 +160,8 @@ public:
 
     uint32_t MortonHash(const OcTreeKey &key);
 
+    uint32_t RoundRobin(uint32_t count);
+
     // when the whole workflow ends, clean all the items that are stalk within the cache
     void cleanHashMap(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
 
@@ -200,7 +174,6 @@ public:
     uint32_t Columns = 4;
     uint32_t clock;
     uint32_t currentPointCloud; // # of current inserting point cloud
-    uint32_t itemCount;
     OcTree* tree;
     uint32_t OcTreeKeyBuffer[3][8];
     OcTreeKeyValuePair BufferedPairs[8];

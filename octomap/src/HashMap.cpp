@@ -9,19 +9,14 @@ void HashMap::KickToBuffer(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSi
 // remove all KV at position clock
     auto it = table[clock].begin();
     while (it != table[clock].end()){
-        if ((it->myValue.currentPointCloud != currentPointCloud)) {
-            OcTreeKey key = it->getKey();
-            // first compress that result
-            it->myValue.compress(tree->getProbMissLog(), tree->getProbHitLog());
-            // kick that entry
-            Item item = Item(key, it->myValue.accumulateOccupancy);
-            q->enqueue(item);
+        // kick that entry
+        Item item = Item(it->key, it->occupancy);
+        q->enqueue(item);
 #if DETAIL_COUNT
-            insert_to_buffer++;
+        insert_to_buffer++;
 #endif
-            bufferSize++;
-            table[clock].erase(it);
-        }
+        bufferSize++;
+        table[clock].erase(it);
         if (it == table[clock].end()){
             break;
         }
@@ -37,18 +32,10 @@ void HashMap::KickToOctree() {
 // remove all KV at position clock
     for (auto it = table[clock].begin(); it != table[clock].end(); it++){
         OcTreeKey key = it->getKey();
-        if ((it->myValue.currentPointCloud == currentPointCloud)) {
-            // don't kick that entry because the current stage is updating it
-            continue;
-        }
-        else{
-            // first compress that result
-            it->myValue.compress(tree->getProbMissLog(), tree->getProbHitLog());
-            // kick that entry
-            Item item = Item(key, it->myValue.accumulateOccupancy);
-            tree->updateNode(key, item.occupancy, lazy_eval);
-            table[clock].erase(it);
-        }
+        // kick that entry
+        Item item = Item(key, it->occupancy);
+        tree->updateNode(key, item.occupancy, lazy_eval);
+        table[clock].erase(it);
     }
     clock = (clock + 1) % TABLE_SIZE;
 }
@@ -60,42 +47,42 @@ void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashV
 #if DETAIL_COUNT
     insert_to_hashmap++;
 #endif
-    bool exist = false;
-
+    // std::cout << table[hashValue].size() << std::endl;
     for (auto it = table[hashValue].begin(); it != table[hashValue].end(); it++) {
-        if (it->getKey() == key){
-            exist = true;
-            if (it->myValue.currentPointCloud == currentPointCloud) {
-            // updating in the current point cloud
-            it->myValue.currentOccupancy = it->myValue.currentOccupancy || value;
+        if (it->key == key){
+            // std::cout << "found" << std::endl;
+            if (value == true) {
+                it->occupancy += tree->getProbHitLog();
+                if (it->occupancy > tree->getClampingThresMaxLog()) {
+                    it->occupancy = tree->getClampingThresMaxLog();
+                }
+                return;
             }
-            else{
-                // comes in with a new point cloud
-                // first merge information of the last round
-                it->myValue.compress(tree->getProbMissLog(), tree->getProbHitLog());
-                // then set up for new point cloud statistics
-                it->myValue.currentPointCloud = currentPointCloud;
-                it->myValue.currentOccupancy = value;
+            else {
+                it->occupancy += tree->getProbMissLog();
+                if (it->occupancy < tree->getClampingThresMinLog()) {
+                    it->occupancy = tree->getClampingThresMinLog();
+                }
+                return;
             }
-            return;
         }
     }
-    
-    if (exist == false) {
-        // this node does not exist
-        double accumulateOccupancy;
-        if (tree->search(key) == NULL) {
-#if DETAIL_COUNT
-                fetch_from_octree++;
-#endif
-            accumulateOccupancy = 0.0;
-        }
-        else{
-            accumulateOccupancy = tree->search(key)->getOccupancy();
-        }
-        MyValue myValue = MyValue(accumulateOccupancy, value, currentPointCloud);
-        table[hashValue].push_back(HashNode(key, myValue));
-    }      
+    // std::cout << "not found" << std::endl;
+
+    // this node does not exist
+    double accumulateOccupancy = 0.0;
+    // std::cout << key.k[0] << " " << key.k[1] << " " << key.k[2] << std::endl;
+    auto node = tree->search(key);
+    // std::cout << "search finished" << std::endl;
+    fetch_from_octree++;
+    if (node == NULL) {
+        accumulateOccupancy = 0.0;
+    }
+    else{
+        accumulateOccupancy = node->getOccupancy();
+    }
+    // std::cout << "occupancy = " << accumulateOccupancy << std::endl;
+    table[hashValue].push_back(HashNode(key, accumulateOccupancy));   
 }
 
 
@@ -122,6 +109,10 @@ uint32_t HashMap::MortonHash(const OcTreeKey &key){
     uint32_t hashValue = sum % TABLE_SIZE;
     // uint32_t hashValue = hashFunc.run((const char *)(&(key.k[0])), sizeof(key_type) * 3) % TABLE_SIZE;
     return hashValue;
+}
+
+uint32_t HashMap::RoundRobin(uint32_t count){
+    return (count % TABLE_SIZE);
 }
 
 
