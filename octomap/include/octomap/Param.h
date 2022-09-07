@@ -11,7 +11,7 @@
 #define DETAIL_LOG false
 #define DEBUG1 false
 #define DEBUG2 false
-#define DETAIL_COUNT true
+#define DETAIL_COUNT false
 
 // #define _OPENMP
 const int DEFAULT_TABLE_SIZE = 20;

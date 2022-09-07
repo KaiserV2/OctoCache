@@ -102,7 +102,7 @@ uint32_t HashMap::MortonHash(const OcTreeKey &key){
     std::bitset<16> k0(key.k[0]);
     std::bitset<16> k1(key.k[1]);
     std::bitset<16> k2(key.k[2]);
-    for (int i = 15; i >= 0; i--) {
+    for (int i = 9; i >= 0; i--) {
         sum *= 8;
         sum += k0.test(i) * 4 + k1.test(i) * 2 + k2.test(i);
     }

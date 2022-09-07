@@ -284,7 +284,7 @@ int main(int argc, char** argv) {
   cout << "\nCreating tree\n===========================\n";
 
   OcTree * tree = new OcTree(res);
-
+  
 #ifdef _OPENMP
   omp_set_num_threads(4);
 #endif
@@ -303,12 +303,13 @@ int main(int argc, char** argv) {
   tree->setProbMiss(probMiss);
 
 
-  gettimeofday(&start, NULL);  // start timer
+  
   uint64_t point1 = __rdtsc();
   size_t numScans = graph->size(); 
   size_t currentScan = 1;
   fstream fout;
   fout.open("/proj/softmeasure-PG0/Peiqing/Test/distribution.txt");
+  gettimeofday(&start, NULL);  // start timer
   for (ScanGraph::iterator scan_it = graph->begin(); scan_it != graph->end(); scan_it++) {
     if (max_scan_no > 0) cout << "("<<currentScan << "/" << max_scan_no << ") " << flush;
     // else cout << "("<<currentScan << "/" << numScans << ") " << flush;
@@ -348,7 +349,6 @@ int main(int argc, char** argv) {
 #if USE_CACHE | USE_NEW_CACHE
   myCache->EndThread();
 #endif
-gettimeofday(&stop1, NULL);  // stop timer
 uint64_t point2 = __rdtsc();
 #if DETAIL_COUNT
   cout << "fetch_from_octree " << fetch_from_octree << endl;
@@ -357,11 +357,11 @@ uint64_t point2 = __rdtsc();
   cout << "insert_to_buffer " << insert_to_buffer << endl;
 #endif
 
-  double time_to_insert = (stop.tv_sec - stop1.tv_sec) + 1.0e-6 *(stop.tv_usec - stop1.tv_usec);
-  cout << endl <<  "Buffer digesting time " << time_to_insert << " sec" << endl;
+  double time_to_insert = (stop.tv_sec - start.tv_sec) + 1.0e-6 *(stop.tv_usec - start.tv_usec);
+  cout << "Total run time " << time_to_insert << " sec " << point2 - point1 << " cpu cycles" << endl;
 
-  double time_to_insert1 = (stop1.tv_sec - start.tv_sec) + 1.0e-6 *(stop1.tv_usec - start.tv_usec);
-  cout << "Total run time " << time_to_insert1 << " sec " << point2 - point1 << " cpu cycles" << endl;
+  fout.open("log.txt", std::ios_base::app);
+  fout << time_to_insert << ",";
 
   cout << "updated " << original_nodeupdate << " nodes in total"<< endl;
   // get rid of graph in mem before doing anything fancy with tree (=> memory)
