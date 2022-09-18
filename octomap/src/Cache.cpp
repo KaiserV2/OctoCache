@@ -206,4 +206,8 @@ namespace octomap{
     void Cache::test(){
         tree->test();
     }
+
+    void Cache::adjust() {
+        return;
+    }
 }

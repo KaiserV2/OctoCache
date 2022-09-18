@@ -101,7 +101,8 @@ namespace octomap {
 
 #if USE_NEW_CACHE
     // insert data into tree  -----------------------
-    std::cout << myCache->bufferSize << std::endl;
+    // std::cout << myCache->bufferSize << std::endl;
+    // myCache->adjust();
     mtx.lock();
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
       myCache->ProcessPkt(*it, 0);
@@ -122,19 +123,17 @@ namespace octomap {
                                              double maxrange, bool lazy_eval, bool discretize) {
 
     
-    uint64_t point1, point2, point3, point4;
-    point3 = __rdtsc();
+    // uint64_t point1, point2, point3, point4;
+    // point3 = __rdtsc();
     KeySet free_cells, occupied_cells;
     if (discretize)
       computeDiscreteUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
     else
       computeUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
     // insert data into tree  -----------------------
-    point4 = __rdtsc();
-    raytrace_time +=  point4 - point3;
-    point1 = __rdtsc();
-    // std::fstream fout;
-    // fout.open("/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/2.txt", std::ios_base::app);
+    // point4 = __rdtsc();
+    // raytrace_time +=  point4 - point3;
+    // point1 = __rdtsc();
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
       // fout << it->k[0] << " " << it->k[1] << " " << it->k[2] << " " << 0 << std::endl;
       updateNode(*it, false, lazy_eval);
@@ -143,8 +142,8 @@ namespace octomap {
       // fout << it->k[0] << " " << it->k[1] << " " << it->k[2] << " " << 1 << std::endl;
       updateNode(*it, true, lazy_eval);
     }
-    point2 = __rdtsc();
-    insert_time +=  point2 - point1;
+    // point2 = __rdtsc();
+    // insert_time +=  point2 - point1;
     // fout << "next" << std::endl;
 
     original_nodeupdate += free_cells.size();

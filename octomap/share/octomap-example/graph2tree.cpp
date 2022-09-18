@@ -122,7 +122,7 @@ void outputStatistics(const OcTree* tree){
 
 int main(int argc, char** argv) {
   // default values:
-  double res = 0.1;
+  double res = 0.2;
   string datasetname = "fr_079";
   string treeFilename = "output";
   uint32_t hashMapSize = 1 << 16;
@@ -358,10 +358,10 @@ uint64_t point2 = __rdtsc();
 #endif
 
   double time_to_insert = (stop.tv_sec - start.tv_sec) + 1.0e-6 *(stop.tv_usec - start.tv_usec);
-  cout << "Total run time " << time_to_insert << " sec " << point2 - point1 << " cpu cycles" << endl;
+  cout << "Total run time " << time_to_insert << " sec " << endl;
 
-  fout.open("log.txt", std::ios_base::app);
-  fout << time_to_insert << ",";
+  // fout.open("log.txt", std::ios_base::app);
+  // fout << time_to_insert << ",";
 
   cout << "updated " << original_nodeupdate << " nodes in total"<< endl;
   // get rid of graph in mem before doing anything fancy with tree (=> memory)

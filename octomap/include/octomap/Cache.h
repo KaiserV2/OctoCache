@@ -54,6 +54,7 @@ public:
     void StartThread();
     void PrintBuffer();
     void test();
+    void adjust();
     // void test(AbstractOcTree* tree);
 
 };

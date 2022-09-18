@@ -105,7 +105,7 @@ void outputStatistics(const OcTree* tree){
 
 int main(int argc, char** argv) {
   // default values:
-  double res = 0.1;
+  double res = 0.2;
   string graphFilename = "";
   string treeFilename = "";
   double maxrange = -1;
