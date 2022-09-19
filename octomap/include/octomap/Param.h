@@ -6,7 +6,7 @@
 #include <atomic>
 
 #define USE_CACHE false
-#define USE_NEW_CACHE false
+#define USE_NEW_CACHE true
 #define ONE_THREAD false // the 1 threaded version of cache
 #define DETAIL_LOG false
 #define DEBUG1 false

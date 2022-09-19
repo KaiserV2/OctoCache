@@ -40,6 +40,12 @@ void HashMap::KickToOctree() {
     clock = (clock + 1) % TABLE_SIZE;
 }
 
+void HashMap::Kick(uint32_t num) {
+    while (num > 0) {
+        
+    }
+}
+
 
 
 

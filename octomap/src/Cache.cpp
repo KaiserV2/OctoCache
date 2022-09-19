@@ -42,6 +42,7 @@ namespace octomap{
 #if CPU_CYCLES
         point3 = __rdtsc();
 #endif
+        return; // we do the eviction outside
         pktCount++;
         if (pktCount % clockWait == 0) {
             this->myHashMap.KickToBuffer(&buffer, bufferSize);
@@ -56,6 +57,12 @@ namespace octomap{
 #endif
         // std::cout << 3 << std::endl;
     }
+
+    void Cache::Kick() {
+        
+        return;
+    }
+
 
     void DigestBuffer(std::thread* thisThd, Cache* myCache) {
 #ifdef __linux__
@@ -207,7 +214,14 @@ namespace octomap{
         tree->test();
     }
 
-    void Cache::adjust() {
-        return;
+    void Cache::adjust(uint32_t PCSize) {
+        std::cout << "buffer remaining " << bufferSize << std::endl;
+        if (bufferSize > 0) { // less items shall be evicted
+            inOutRatio /= 2;
+        }
+        else { // more items shall be evicted
+            inOutRatio = (1 + inOutRatio) / 2;
+        }
+        evictNum = inOutRatio * PCSize;
     }
 }

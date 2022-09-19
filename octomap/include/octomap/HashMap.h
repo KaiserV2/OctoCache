@@ -167,6 +167,8 @@ public:
 
     void KickToOctree();
 
+    void Kick(uint32_t num);
+
 public:
     // hash table
     std::vector<HashNode> *table;

@@ -32,6 +32,8 @@ public:
     uint32_t clockWait;
     std::ofstream fout;
     bool runThread;
+    double inOutRatio;
+    uint32_t evictNum;
     // function to feed items in the buffer to the octree
 
     Cache(uint32_t _TABLE_SIZE, OcTree* _tree, std::string file, uint32_t _clockWait = 16) {
@@ -42,19 +44,21 @@ public:
         clockWait = _clockWait; // make it 2^n, the default is 90k / 7k
         runThread = true;
         // fout.open(file);
+        inOutRatio = 0.0;
     } 
     ~Cache() {
         // fout.close();
     }
     
     void ProcessPkt(const OcTreeKey &key, const bool &value);
+    void Kick();
     // static void DigestBuffer(std::thread* thisThd);
     void EndThread();
     void EndOneThread();
     void StartThread();
     void PrintBuffer();
     void test();
-    void adjust();
+    void adjust(uint32_t PCSize);
     // void test(AbstractOcTree* tree);
 
 };
