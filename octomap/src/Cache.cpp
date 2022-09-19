@@ -43,6 +43,7 @@ namespace octomap{
         point3 = __rdtsc();
 #endif
         return; // we do the eviction outside
+
         pktCount++;
         if (pktCount % clockWait == 0) {
             this->myHashMap.KickToBuffer(&buffer, bufferSize);
@@ -59,7 +60,7 @@ namespace octomap{
     }
 
     void Cache::Kick() {
-        
+        myHashMap.Kick(evictNum, &buffer, bufferSize);
         return;
     }
 

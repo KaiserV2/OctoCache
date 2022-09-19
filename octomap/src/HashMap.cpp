@@ -40,9 +40,32 @@ void HashMap::KickToOctree() {
     clock = (clock + 1) % TABLE_SIZE;
 }
 
-void HashMap::Kick(uint32_t num) {
+void HashMap::Kick(uint32_t num, ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize) {
     while (num > 0) {
-        
+        if (table[clock].size() == 0) {
+            clock = (clock + 1) % TABLE_SIZE;
+        }
+        else {
+            num -= table[clock].size();
+            auto it = table[clock].begin();
+            while (it != table[clock].end()){
+                // kick that entry
+                Item item = Item(it->key, it->occupancy);
+                q->enqueue(item);
+        #if DETAIL_COUNT
+                insert_to_buffer++;
+        #endif
+                bufferSize++;
+                table[clock].erase(it);
+                if (it == table[clock].end()){
+                    break;
+                }
+                else{
+                    it++;
+                }
+            }
+            clock = (clock + 1) % TABLE_SIZE;
+        }
     }
 }
 

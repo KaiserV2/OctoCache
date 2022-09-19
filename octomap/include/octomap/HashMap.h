@@ -167,7 +167,7 @@ public:
 
     void KickToOctree();
 
-    void Kick(uint32_t num);
+    void Kick(uint32_t num, ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
 
 public:
     // hash table
