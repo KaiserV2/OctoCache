@@ -122,10 +122,13 @@ void outputStatistics(const OcTree* tree){
 
 int main(int argc, char** argv) {
   // default values:
-  double res = 0.2;
+  double res = 0.1;
   string datasetname = "fr_079";
   string treeFilename = "output";
   uint32_t hashMapSize = 1 << 16;
+  uint32_t bound = 10;
+  double ratio = 0.5;
+  int maxPC = 1000000;
   uint32_t clockSpeed = 1;
   string ss;
   string sk;
@@ -173,6 +176,18 @@ int main(int argc, char** argv) {
     else if (!strcmp(argv[arg], "-s")){ // specify the size of the hash table
       ss = std::string(argv[++arg]);
       hashMapSize *= stoi(ss);
+    }
+    else if (!strcmp(argv[arg], "-b")){ // specify the size of the hash table
+      ss = std::string(argv[++arg]);
+      bound = stoi(ss);
+    }
+    else if (!strcmp(argv[arg], "-ratio")){ // specify the in out ratio for the cache
+      ss = std::string(argv[++arg]);
+      ratio = stod(ss);
+    }
+    else if (!strcmp(argv[arg], "-pc")){ // specify the in out ratio for the cache
+      ss = std::string(argv[++arg]);
+      maxPC = stoi(ss);
     }
     else if (! strcmp(argv[arg], "-k")){
       sk = std::string(argv[++arg]);
@@ -290,7 +305,7 @@ int main(int argc, char** argv) {
 #endif
 #if USE_CACHE | USE_NEW_CACHE
   string filename = "/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/" + datasetname + ".txt";
-  Cache* myCache = new Cache(hashMapSize, tree, filename, clockSpeed);
+  Cache* myCache = new Cache(hashMapSize, tree, clockSpeed, ratio, bound);
 #if ONE_THREAD
 #else
   myCache->StartThread();
@@ -336,10 +351,9 @@ int main(int argc, char** argv) {
     if ((max_scan_no > 0) && (currentScan == (unsigned int) max_scan_no))
       break;
     currentScan++;
-    // for (int i = 0; i < myCache->myHashMap.TABLE_SIZE; i++) {
-    //   fout << myCache->myHashMap.table[i].size() << ",";
-    // }
-    // fout << endl;
+    if (currentScan == maxPC) {
+      break;
+    }
   }
   gettimeofday(&stop, NULL);  // stop timer
 #if DEBUG2

@@ -1,4 +1,4 @@
-SET(CMAKE_C_COMPILER /usr/bin/clang++)
+SET(CMAKE_C_COMPILER /usr/bin/clang)
 SET(CMAKE_CXX_COMPILER /usr/bin/clang++)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
