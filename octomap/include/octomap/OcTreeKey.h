@@ -88,6 +88,16 @@ namespace octomap {
     bool operator== (const OcTreeKey &other) const { 
       return ((k[0] == other[0]) && (k[1] == other[1]) && (k[2] == other[2]));
     }
+
+// what I added in
+    bool operator< (const OcTreeKey &other) const {
+      if (k[0] < other[0]) return true;
+      else if (k[0] > other[0]) return false;
+      else if (k[1] < other[1]) return true;
+      else if (k[1] > other[1]) return false;
+      else if (k[2] < other[2]) return true;
+      else return false;
+    }
     
     bool operator!= (const OcTreeKey& other) const {
       return( (k[0] != other[0]) || (k[1] != other[1]) || (k[2] != other[2]) );

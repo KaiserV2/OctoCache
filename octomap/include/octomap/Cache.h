@@ -30,21 +30,19 @@ public:
     std::thread thd;
     uint32_t pktCount;
     uint32_t clockWait;
-    std::ofstream fout;
     bool runThread;
     double inOutRatio;
     uint32_t evictNum;
+    uint32_t bound;
     // function to feed items in the buffer to the octree
 
-    Cache(uint32_t _TABLE_SIZE, OcTree* _tree, std::string file, uint32_t _clockWait = 16) {
-        myHashMap.init(_TABLE_SIZE, _tree);
+    Cache(uint32_t _TABLE_SIZE, OcTree* _tree, double _bound = 10, uint32_t _maxPCNum = 1) {
+        myHashMap.init(_TABLE_SIZE, _tree, _bound, _maxPCNum);
         bufferSize = 0;
         tree = _tree;
         pktCount = 0; // here pkt count means the number of "duplicated insertions"
-        clockWait = _clockWait; // make it 2^n, the default is 90k / 7k
         runThread = true;
-        // fout.open(file);
-        inOutRatio = 0.0;
+        bound = _bound;
     } 
     ~Cache() {
         // fout.close();
@@ -58,7 +56,7 @@ public:
     void StartThread();
     void PrintBuffer();
     void test();
-    void adjust(uint32_t PCSize);
+    void adjust();
     // void test(AbstractOcTree* tree);
 
 };
