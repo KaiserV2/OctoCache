@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
   double probMiss = emptyTree.getProbMiss();
   double probHit = emptyTree.getProbHit();
 
-  SpecifyThread();
+  // SpecifyThread();
   timeval start; 
   timeval stop;
   timeval stop1;  
@@ -379,16 +379,6 @@ uint64_t point2 = __rdtsc();
   if (logfile.is_open())
     logfile.close();
 
-
-cout << "octree insertion time " << insert_time << endl;
-cout << "ray tracing time " << raytrace_time << endl;
-#if USE_CACHE | USE_NEW_CACHE
-  uint64_t all_time = hash_time + put_time + kick_time;
-  double hash_portion = (double)hash_time / (double)all_time;
-  double put_portion = (double)put_time / (double)all_time;
-  double kick_portion = (double)kick_time / (double)all_time;
-  cout << datasetname << " " << hash_time << " " << put_time << " " << kick_time << endl;
-#endif
 
   return 0;
 

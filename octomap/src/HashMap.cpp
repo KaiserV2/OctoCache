@@ -5,22 +5,20 @@
 
 namespace octomap{
 
-void HashMap::KickToBuffer(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize){
+void HashMap::KickToBuffer(ReaderWriterQueue<std::pair<OcTreeKey,double>>* q, std::atomic_int& bufferSize){
 // sequentially clean all the inactive buckets in the table
     for (int i = 0; i < TABLE_SIZE; i++) {
         // >>1 for all clock items
         clockCounters[i] = clockCounters[i] >> 1;
         // if the bucket is inactive, clean it
         if (clockCounters[i] == 0) {
-            if (!table[i].size()) {
+            if (table[i].count() == 0) { // no items in the circular queue
                 continue;
             }
             // clean the bucket
-            for (auto it = table[i].begin(); it != table[i].end(); it++) {
-                Item item;
-                item.key = it->key;
-                item.occupancy = it->occupancy;
-                q->enqueue(item);
+            for (int j = table[i].back(); j != table[i].front(); j = (j + table[i].maxitems()) % (table[i].maxitems() + 1)) {
+                // if the item is not in the current point cloud, kick it to the buffer
+                q->enqueue(table[i].getPair(j));
                 bufferSize++;
             }
             // clean the bucket
@@ -30,45 +28,52 @@ void HashMap::KickToBuffer(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSi
 }
 
 
-void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue, ReaderWriterQueue<Item>* q) {
-    // std::cout << table[hashValue].size() << std::endl;
+void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue, ReaderWriterQueue<std::pair<OcTreeKey,double>>* q) {
     // we find from end to begin, if the vector is empty then just skip
     clockCounters[hashValue] = clockCounters[hashValue] | (1 << maxPCNum);
-    if (table[hashValue].size()) {
-        for (auto it = table[hashValue].end() - 1; it >= table[hashValue].begin(); it--) {
-            if (it->key == key){
-                // std::cout << "found" << std::endl;
-                if (value == true) {
-                    it->occupancy += tree->getProbHitLog();
-                    if (it->occupancy > tree->getClampingThresMaxLog()) {
-                        it->occupancy = tree->getClampingThresMaxLog();
-                    }
-                    return;
-                }
-                else {
-                    it->occupancy += tree->getProbMissLog();
-                    if (it->occupancy < tree->getClampingThresMinLog()) {
-                        it->occupancy = tree->getClampingThresMinLog();
-                    }
-                    return;
-                }
+    // if the bucket is not empty, search for the key
+    int pos = table[hashValue].find(key);
+    if (pos != -1) {
+        // if the key is found, update the value
+        if (value == true) {
+            table[hashValue].getValue(pos) += tree->getProbHitLog();
+            if (table[hashValue].getValue(pos) > tree->getClampingThresMaxLog()) {
+                table[hashValue].getValue(pos) = tree->getClampingThresMaxLog();
             }
+            return;
+        }
+        else {
+            table[hashValue].getValue(pos) += tree->getProbMissLog();
+            if (table[hashValue].getValue(pos) < tree->getClampingThresMinLog()) {
+                table[hashValue].getValue(pos) = tree->getClampingThresMinLog();
+            }
+            return;
         }
     }
     // this node does not exist
     double accumulateOccupancy = 0.0;
-    // std::cout << key.k[0] << " " << key.k[1] << " " << key.k[2] << std::endl;
     auto node = tree->search(key);
     // fetch_from_octree++;
     if (node != NULL) {
         accumulateOccupancy = node->getOccupancy();
     }
-    // std::cout << "occupancy = " << accumulateOccupancy << std::endl;
-    table[hashValue].push_back(HashNode(key, accumulateOccupancy));
-    if (table[hashValue].size() > bound) {
-        q->enqueue(Item(table[hashValue][0].key, table[hashValue][0].occupancy));
-        table[hashValue].erase(table[hashValue].begin());
+    if (value == true) {
+        accumulateOccupancy += tree->getProbHitLog();
+        if (accumulateOccupancy > tree->getClampingThresMaxLog()) {
+            accumulateOccupancy = tree->getClampingThresMaxLog();
+        }
     }
+    else {
+        accumulateOccupancy += tree->getProbMissLog();
+        if (accumulateOccupancy < tree->getClampingThresMinLog()) {
+            accumulateOccupancy = tree->getClampingThresMinLog();
+        }
+    }
+    if (table[hashValue].isFull()) {
+        q->enqueue(table[hashValue].last());
+        table[hashValue].pop();
+    }
+    table[hashValue].push(key, accumulateOccupancy);
 }
 
 
@@ -102,7 +107,7 @@ uint32_t HashMap::RoundRobin(uint32_t count){
 }
 
 
-void HashMap::cleanHashMap(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize) {
+void HashMap::cleanHashMap(ReaderWriterQueue<std::pair<OcTreeKey,double>>* q, std::atomic_int& bufferSize) {
     currentPointCloud++;
     printf("Cleaning the HashMap\n");
     for (uint32_t i = 0; i < TABLE_SIZE; i++) {

@@ -23,7 +23,7 @@ public:
     // have a buffer
     std::atomic_bool run;
     std::atomic_int bufferSize;
-    ReaderWriterQueue<Item> buffer;
+    ReaderWriterQueue<std::pair<OcTreeKey,double>> buffer;
     // std::queue<Item> buffer;
     HashMap myHashMap;
     OcTree* tree;

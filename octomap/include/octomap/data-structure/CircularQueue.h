@@ -13,9 +13,14 @@ class CircularQueue {
       _front = 0; // the frone position is not for storage
       _back = 0;
       _count = 0;
+    }
+    void init(int maxitems = 256) {
+      _front = 0;
+      _back = 0;
+      _count = 0;
       _maxitems = maxitems;
-      _keys = new K[maxitems + 1];
-      _values = new V[maxitems + 1];
+      _keys = new K[_maxitems];
+      _values = new V[_maxitems];
     }
     ~CircularQueue() {
       delete[] _keys;
@@ -24,13 +29,17 @@ class CircularQueue {
     inline int count();
     inline int front();
     inline int back();
+    inline int maxitems();
     int find(const K &key);
     void push(const K &key, const V &value);
     void pop();
     std::pair<K,V> last();
+    std::pair<K,V> getPair(int i);
     void clear();
     void update(int pos, const V &value);
-    V get(int pos);
+    inline V& getValue(int pos);
+    inline K& getKey(int pos);
+    inline bool isFull();
 };
 
 template<class K, class V>
@@ -52,9 +61,18 @@ inline int CircularQueue<K, V>::back()
 }
 
 template<class K, class V>
+inline int CircularQueue<K, V>::maxitems() 
+{
+  return _maxitems;
+}
+
+template<class K, class V>
 int CircularQueue<K, V>::find(const K &key)
 {
-  for (int i = (_front + 1) % (_maxitems + 1); i != _back + 1; i = (i + 1) % (_maxitems + 1)) {
+  if (_count == 0) {
+    return -1;
+  }
+  for (int i = (_front + 1) % (_maxitems + 1); i != (_back + 1) % (_maxitems + 1); i = (i + 1) % (_maxitems + 1)) {
     if (_keys[i] == key) {
       return i;
     }
@@ -69,7 +87,6 @@ void CircularQueue<K, V>::push(const K &key, const V &value)
     // queue is full
     return;
   }
-  std::cout << "put at position: " << _front << std::endl;
   _keys[_front] = key;
   _values[_front] = value;
   _front--;
@@ -96,11 +113,16 @@ void CircularQueue<K, V>::pop() { // pop the last element
 
 template<class K, class V>
 std::pair<K,V> CircularQueue<K, V>::last() { // return the last element
-  if(_count <= 0) {
-    return NULL;
-  }
+  assert(_count > 0);
   return std::pair<K,V>(_keys[_back], _values[_back]);
 }
+
+template<class K, class V>
+std::pair<K,V> CircularQueue<K, V>::getPair(int i) { // return the first element
+  assert(_count > 0);
+  return std::pair<K,V>(_keys[i], _values[i]);
+}
+
 
 template<class K, class V>
 void CircularQueue<K, V>::clear() 
@@ -117,9 +139,21 @@ void CircularQueue<K, V>::update(int pos, const V &value)
 }
 
 template<class K, class V>
-V CircularQueue<K, V>::get(int pos) 
+inline V& CircularQueue<K, V>::getValue(int pos) 
 {
   return _values[pos];
+}
+
+template<class K, class V>
+inline K& CircularQueue<K, V>::getKey(int pos) 
+{
+  return _keys[pos];
+}
+
+template<class K, class V>
+inline bool CircularQueue<K, V>::isFull() 
+{
+  return _count == _maxitems;
 }
 
 #endif

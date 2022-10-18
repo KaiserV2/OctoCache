@@ -39,10 +39,15 @@
 
 
 
-for i in {1..3}
+for i in {1..7}
 do
-    ./test -i $i -maxPCNum 1
+    ./test -i 3 -maxPCNum $i
 done
+
+# for i in {1..7}
+# do
+#     ./test -i 2 -maxPCNum $i
+# done
 
 # for i in {1,2,3}
 # do

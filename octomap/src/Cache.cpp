@@ -48,10 +48,10 @@ namespace octomap{
 
 
     void DigestBuffer(std::thread* thisThd, Cache* myCache) {
-#ifdef __linux__
-        if(!setaffinity(thisThd, 0))
-            return;
-#endif
+// #ifdef __linux__
+//         if(!setaffinity(thisThd, 0))
+//             return;
+// #endif
         while (true) {
             if (!myCache->run) {
                 break;
@@ -60,11 +60,10 @@ namespace octomap{
                 mtx.lock();
                 // std::cout << "unlock" << std::endl;
                 while(myCache->bufferSize){
-                    Item item;
-                    if (myCache->buffer.try_dequeue(item)) {
+                    std::pair<OcTreeKey,double> pair;
+                    if (myCache->buffer.try_dequeue(pair)) {
                         // mtx.lock();
-                        OcTreeKey key = item.key;
-                        myCache->tree->setNodeValue(key, item.occupancy, lazy_eval);
+                        myCache->tree->setNodeValue(pair.first, pair.second, lazy_eval);
                         myCache->bufferSize--;
                         // mtx.unlock();
                         insert_to_octree++;
@@ -80,16 +79,14 @@ namespace octomap{
 
     void OneDigestBuffer(Cache* myCache) {
         while((myCache->run) || (myCache->bufferSize != 0)) {
-            Item item;
-            while (myCache->buffer.try_dequeue(item)) { 
+            std::pair<OcTreeKey,double> pair;
+            while (myCache->buffer.try_dequeue(pair)) { 
 #if DEBUG1
                 std::cout << "Putting item to octree!" << std::endl;
 #endif
-                OcTreeKey key = item.key;
-                bool occupancy = item.occupancy;
-                if (occupancy == true) {
+                if (pair.second == true) {
                     // its an occupied voxel
-                    myCache->tree->updateNode(key, true, lazy_eval);
+                    myCache->tree->updateNode(pair.first, true, lazy_eval);
                     myCache->bufferSize--;
                     // std::cout << myCache->bufferSize << std::endl;
 #if DEBUG1
@@ -98,7 +95,7 @@ namespace octomap{
                 }
                 else {
                     // a free voxel
-                    myCache->tree->updateNode(key, false, lazy_eval);
+                    myCache->tree->updateNode(pair.first, false, lazy_eval);
                     myCache->bufferSize--;
                     // std::cout << myCache->bufferSize << std::endl;
 #if DEBUG1
