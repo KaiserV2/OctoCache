@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
   string treeFilename = "output";
   uint32_t hashMapSize = 1 << 16;
   uint32_t bound = 10;
-  uint32_t maxPCNum = 1;
+  int maxPCNum = 1;
   uint32_t clockSpeed = 1;
   string ss;
   string sk;
@@ -382,13 +382,13 @@ uint64_t point2 = __rdtsc();
 
 cout << "octree insertion time " << insert_time << endl;
 cout << "ray tracing time " << raytrace_time << endl;
-#if USE_CACHE | USE_NEW_CACHE
-  uint64_t all_time = hash_time + put_time + kick_time;
-  double hash_portion = (double)hash_time / (double)all_time;
-  double put_portion = (double)put_time / (double)all_time;
-  double kick_portion = (double)kick_time / (double)all_time;
-  cout << datasetname << " " << hash_time << " " << put_time << " " << kick_time << endl;
-#endif
+// #if USE_CACHE | USE_NEW_CACHE
+//   uint64_t all_time = hash_time + put_time + kick_time;
+//   double hash_portion = (double)hash_time / (double)all_time;
+//   double put_portion = (double)put_time / (double)all_time;
+//   double kick_portion = (double)kick_time / (double)all_time;
+//   cout << datasetname << " " << hash_time << " " << put_time << " " << kick_time << endl;
+// #endif
 
   return 0;
 

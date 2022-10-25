@@ -41,7 +41,12 @@
 
 for i in {1..3}
 do
-    ./test -i $i -maxPCNum 1
+    for j in {1..7}
+    do
+        ./test -i $i -maxPCNum $j
+        ./test -i $i -maxPCNum $j
+        ./test -i $i -maxPCNum $j
+    done
 done
 
 # for i in {1,2,3}
