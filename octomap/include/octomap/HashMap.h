@@ -7,6 +7,7 @@
 #include <vector>
 #include <atomic>
 #include <iostream>
+#include <algorithm>
 #include <bitset>
 #include <string.h>
 #include "OcTreeKey.h"
@@ -127,7 +128,7 @@ public:
 
     }
 
-    void init(uint32_t _TABLE_SIZE, OcTree* _tree, uint32_t _bound, uint32_t _maxPCNum) {
+    void init(uint32_t _TABLE_SIZE, OcTree* _tree, uint32_t _bound, int _maxPCNum) {
         // construct zero initialized hash table of size
         TABLE_SIZE = _TABLE_SIZE;
         table = new std::vector<HashNode>[TABLE_SIZE];
@@ -180,11 +181,19 @@ public:
 
     void Kick(int num, ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
 
+    void increasePCNum() {
+        maxPCNum++;
+    }
+
+    void decreasePCNum() {
+        maxPCNum = std::max(1, maxPCNum - 1); // at least 1 point cloud
+    }
+
 public:
     // hash table
     std::vector<HashNode> *table;
     // CircularQueue<OcTreeKey, double> *table;
-    uint32_t maxPCNum; // the maximum number of point clouds
+    int maxPCNum; // the maximum number of point clouds
     uint8_t* clockCounters; // the maximum number of point clouds in the cache is 7 (if >=8, change into a uint16_t...)
     uint32_t TABLE_SIZE;
     OcTree* tree;

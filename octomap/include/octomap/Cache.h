@@ -34,15 +34,22 @@ public:
     double inOutRatio;
     uint32_t evictNum;
     uint32_t bound;
+
+    double lastVoxelInsertTime;
+    int interval; // the interval between 2 adjustments
+    bool increaseFlag;
     // function to feed items in the buffer to the octree
 
-    Cache(uint32_t _TABLE_SIZE, OcTree* _tree, double _bound = 10, uint32_t _maxPCNum = 1) {
+    Cache(uint32_t _TABLE_SIZE, OcTree* _tree, double _bound = 10, int _maxPCNum = 10) {
         myHashMap.init(_TABLE_SIZE, _tree, _bound, _maxPCNum);
         bufferSize = 0;
         tree = _tree;
         pktCount = 0; // here pkt count means the number of "duplicated insertions"
         runThread = true;
         bound = _bound;
+        lastVoxelInsertTime = 0;
+        interval = _maxPCNum + 1;
+        increaseFlag = false;
     } 
     ~Cache() {
         // fout.close();
@@ -56,7 +63,7 @@ public:
     void StartThread();
     void PrintBuffer();
     void test();
-    void adjust();
+    void adjust(double perVoxelInsertTime);
     // void test(AbstractOcTree* tree);
 
 };

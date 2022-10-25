@@ -163,8 +163,34 @@ namespace octomap{
         tree->test();
     }
 
-    void Cache::adjust() {
-        // adjust how many PCs can be kept in the cache
+    void Cache::adjust(double currentVoxelInsertTime) {
+        return;
+        // std::cout << "avg voxel insertion time to cache" << currentVoxelInsertTime << ", cache holding " << myHashMap.maxPCNum << " PCs" << std::endl;
+        interval--;
+        increaseFlag = false;
+        if (myHashMap.currentPointCloud == myHashMap.maxPCNum - 1) { // record this runtime as the baseline
+            lastVoxelInsertTime = currentVoxelInsertTime;
+            return;
+        }
+        if (interval) {
+            return;
+        }
+        
+        // interval goes to 0, we can now do adjustment or probing
+        if (currentVoxelInsertTime > lastVoxelInsertTime * 1.05) {
+            // try to store more in the cache
+            // std::cout << "last observation is " << lastVoxelInsertTime << " We increase cache load" << std::endl;
+            lastVoxelInsertTime = currentVoxelInsertTime;
+            myHashMap.increasePCNum();
+            increaseFlag = true;
+        }
+        else {
+            // probing, try to store less in the cache
+            // std::cout << "last observation is " << lastVoxelInsertTime << " We decrease cache load" << std::endl;
+            lastVoxelInsertTime = currentVoxelInsertTime;
+            myHashMap.decreasePCNum();
+        }
+        interval = 2;
         return;
     }
 }
