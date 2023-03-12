@@ -37,7 +37,11 @@
 #include <stdlib.h>
 #include <omp.h>
 #include <fstream>
-#include <x86intrin.h>
+#ifdef __x86_64__
+#include <x86intrin.h> // for rdtsc on x86
+#elif __aarch64__
+#include <stdint.h> // for uint64_t on ARM64
+#endif
 
 
 #include <octomap/MCTables.h>

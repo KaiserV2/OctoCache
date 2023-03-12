@@ -3,7 +3,11 @@
 #include <pthread.h>
 #include <thread>
 #include <sys/time.h>
-#include <x86intrin.h>
+#ifdef __x86_64__
+#include <x86intrin.h> // for rdtsc on x86
+#elif __aarch64__
+#include <stdint.h> // for uint64_t on ARM64
+#endif
 
 
 #define CPU_CYCLES false
@@ -28,19 +32,25 @@ namespace octomap{
     void Cache::ProcessPkt(const OcTreeKey &key, const bool &value){
 #if CPU_CYCLES
         uint64_t point1, point2, point3, point4;
+#ifdef __x86_64__
         point1 = __rdtsc();
+#endif
 #endif
         // uint32_t hashValue = this->myHashMap.ScalarHash(key);
         uint32_t hashValue = this->myHashMap.MortonHash(key);
         // uint32_t hashValue = this->myHashMap.RoundRobin(pktCount);
         // std::cout << 1 << std::endl;
 #if CPU_CYCLES
+#ifdef __x86_64__
         point2 = __rdtsc();
+#endif
 #endif
         this->myHashMap.put(key, value, hashValue);
         // std::cout << 2 << std::endl;
 #if CPU_CYCLES
+#ifdef __x86_64__
         point3 = __rdtsc();
+#endif
 #endif
         return; // we do the eviction outside
 
@@ -48,7 +58,9 @@ namespace octomap{
         if (pktCount % clockWait == 0) {
             this->myHashMap.KickToBuffer(&buffer, bufferSize);
 #if CPU_CYCLES
+#ifdef __x86_64__
             point4 = __rdtsc();
+#endif
             kick_time +=  point4 - point3;
 #endif
         }
@@ -92,42 +104,6 @@ namespace octomap{
             }
         }
     }
-
-/*
-        while((myCache->run) || (myCache->bufferSize != 0)) {
-            Item item;
-            if (myCache->run == false){
-                std::cout << "BufferSize returns" << myCache->bufferSize << std::endl;
-                std::cout << "Trydequeue returns" << myCache->buffer.try_dequeue(item) << std::endl;
-                break;
-            }
-            while (myCache->buffer.try_dequeue(item)) { 
-                while (true){
-                    if (lock == true) {
-                        continue;
-                    }
-                    mtx.lock();
-#if CPU_CYCLES
-                    uint64_t point1, point2;
-                    point1 = __rdtsc();
-#endif
-                    OcTreeKey key = item.key;
-                    // std::cout << "Inserting " << key.k[0] << " " << key.k[1] << " " << key.k[2] << std::endl;
-                    myCache->tree->updateNode(key, item.occupancy, lazy_eval);
-                    myCache->bufferSize--;
-#if CPU_CYCLES
-                    point2 = __rdtsc();
-                    insert_time +=  point2 - point1;
-#endif
-#if DETAIL_COUNT
-                    insert_to_octree++;
-#endif
-                    mtx.unlock();
-                }
-            }
-        }
-    }
-*/
 
 
     void OneDigestBuffer(Cache* myCache) {

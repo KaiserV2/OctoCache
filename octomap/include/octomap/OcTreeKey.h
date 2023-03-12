@@ -40,6 +40,7 @@
 #include <ciso646>
 #include <stdint.h>
 #include <vector>
+#include <cstddef>
 
 #include <assert.h>
 
