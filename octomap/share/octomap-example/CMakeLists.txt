@@ -1,9 +1,11 @@
-SET(CMAKE_C_COMPILER /usr/bin/clang++)
-SET(CMAKE_CXX_COMPILER /usr/bin/clang++)
+# SET(CMAKE_C_COMPILER /usr/bin/clang++)
+# SET(CMAKE_CXX_COMPILER /usr/bin/clang++)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 PROJECT( octomap-test )
 
+
+add_definitions(-std=c++11)
 if(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)

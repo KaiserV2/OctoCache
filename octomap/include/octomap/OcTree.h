@@ -50,6 +50,7 @@ namespace octomap {
   class OcTree : public OccupancyOcTreeBase <OcTreeNode> {
 
   public:
+    Cache* myCache;
     /// Default constructor, sets resolution of leafs
     OcTree(double resolution);
 

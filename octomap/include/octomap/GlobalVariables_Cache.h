@@ -10,6 +10,7 @@
 namespace octomap{
     // extern HashMap myHashMap;
     extern int pointCloudCount;
+    extern float bigNumber;
     // extern Buffer myBuffer;
     
 }

@@ -1,5 +1,7 @@
 #include <octomap/HashMap.h>
 #include <octomap/OcTree.h>
+#include <octomap/GlobalVariables_Octomap.h>
+#include <octomap/GlobalVariables_Cache.h>
 
 #define DEBUG3 true
 
@@ -69,7 +71,18 @@ void HashMap::Kick(uint32_t num, ReaderWriterQueue<Item>* q, std::atomic_int& bu
     }
 }
 
-
+float HashMap::get(const OcTreeKey &key) {
+    // this function waits to be finished
+    // search each bucket after another, stops if found 10 consecutive full buckets
+    unsigned long hashValue = MortonHash(key);
+    for (auto it = table[hashValue].begin(); it != table[hashValue].end(); it++) {
+        if (it->key == key){
+            return it->occupancy;
+        }
+    }
+    // it is impossible to return a so large number as 100, note as not found
+    return bigNumber;
+}
 
 
 void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue) {
@@ -150,6 +163,13 @@ void HashMap::cleanHashMap(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSi
     printf("Cleaning the HashMap\n");
     for (uint32_t i = 0; i < TABLE_SIZE; i++) {
         KickToBuffer(q, bufferSize);
+    }
+}
+
+int HashMap::loadSize(){
+    int sum = 0;
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        sum += table[i].size();
     }
 }
 

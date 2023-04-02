@@ -12,3 +12,9 @@ ROS_PREFIX=/opt/ros/kinetic/include/octomap
                                                                                 
 sudo cp $SELF_PREFIX/*.h $ROS_PREFIX/                                           
 sudo cp $SELF_PREFIX/*.hxx $ROS_PREFIX/
+mkdir -p $ROS_PREFIX/hash
+mkdir -p $ROS_PREFIX/multi-core
+sudo cp $SELF_PREFIX/hash/*.h $ROS_PREFIX/hash/
+sudo cp $SELF_PREFIX/multi-core/*.h $ROS_PREFIX/multi-core/
+
+# sudo cp $SELF_PREFIX/* $ROS_PREFIX/

@@ -1,5 +1,7 @@
 #include <octomap/Cache.h>
 #include <octomap/OcTree.h>
+#include <octomap/GlobalVariables_Octomap.h>
+#include <octomap/GlobalVariables_Cache.h>
 #include <pthread.h>
 #include <thread>
 #include <sys/time.h>
@@ -29,6 +31,20 @@ namespace octomap{
     }
 #endif
 
+    Cache::Cache(uint32_t _TABLE_SIZE, OcTree* _tree, std::string file, uint32_t _clockWait = 16) {
+        myHashMap.init(_TABLE_SIZE, _tree);
+        bufferSize = 0;
+        tree = _tree;
+        pktCount = 0; // here pkt count means the number of "duplicated insertions"
+        clockWait = _clockWait; // make it 2^n, the default is 90k / 7k
+        runThread = true;
+        // fout.open(file);
+        inOutRatio = 0.0;
+        this->StartThread();
+    }
+
+    Cache::~Cache(){}
+
     void Cache::ProcessPkt(const OcTreeKey &key, const bool &value){
 #if CPU_CYCLES
         uint64_t point1, point2, point3, point4;
@@ -36,6 +52,7 @@ namespace octomap{
         point1 = __rdtsc();
 #endif
 #endif
+        // std::cout << "[" << key.k[0] << "," << key.k[1] << "," << key.k[2] << "]," << std::endl;
         // uint32_t hashValue = this->myHashMap.ScalarHash(key);
         uint32_t hashValue = this->myHashMap.MortonHash(key);
         // uint32_t hashValue = this->myHashMap.RoundRobin(pktCount);
@@ -200,5 +217,30 @@ namespace octomap{
             inOutRatio = (1 + inOutRatio) / 2;
         }
         evictNum = inOutRatio * PCSize;
+    }
+
+    double Cache::search(const OcTreeKey &key) {
+        // make sure the buffer is emtpy
+        double logodds =  myHashMap.get(key); // if get() not found, will return bigNumber
+        if (logodds == bigNumber) {
+            return bigNumber;
+        }
+        return 1. - ( 1. / (1. + exp(logodds)));
+    }
+
+    double Cache::search(double x, double y, double z) {
+        // first convert into OcTreeKey
+        OcTreeKey key;
+        if (!tree->coordToKeyChecked(x, y, z, key)){ // if the coordinates does not correspond to a valid key
+            OCTOMAP_ERROR_STR("Error in search: ["<< x <<" "<< y << " " << z << "] is out of OcTree bounds!");
+            return bigNumber;
+        }
+        else {
+            return search(key);
+        }
+    }
+
+    void Cache::waitForEmptyBuffer() {
+        while(bufferSize) {}
     }
 }

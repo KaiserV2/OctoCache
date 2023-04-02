@@ -185,7 +185,6 @@ struct xxhash32 {
     // fragile actually use as the main implementation.
     static void parallel(const uint32_t* key, uint32_t seed,
                          uint32_t res[8]) {
-#warning "No AVX2 support detected, using a fallback version instead."
         uint32_t h[8];
         for (int i = 0; i < 8; ++i) {
             h[i] = seed + PRIME32_5;

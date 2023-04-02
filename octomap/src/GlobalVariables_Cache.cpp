@@ -6,5 +6,6 @@
 namespace octomap {
     // HashMap myHashMap;
     int pointCloudCount = 0;
+    float bigNumber = 1024;
     // Buffer myBuffer;
 }

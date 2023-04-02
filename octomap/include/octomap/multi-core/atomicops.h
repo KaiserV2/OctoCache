@@ -58,38 +58,38 @@ extern "C" void AnnotateHappensAfter(const char*, int, void*);
 
 // Portable atomic fences implemented below:
 
-enum memory_order {
-    memory_order_relaxed,
-    memory_order_acquire,
-    memory_order_release,
-    memory_order_acq_rel,
-    memory_order_seq_cst,
+enum memory_order_ {
+    memory_order_relaxed_,
+    memory_order_acquire_,
+    memory_order_release_,
+    memory_order_acq_rel_,
+    memory_order_seq_cst_,
 
     // memory_order_sync: Forces a full sync:
     // #LoadLoad, #LoadStore, #StoreStore, and most significantly, #StoreLoad
-            memory_order_sync = memory_order_seq_cst
+            memory_order_sync = memory_order_seq_cst_
 };
 
-AE_FORCEINLINE void compiler_fence(memory_order order) AE_NO_TSAN
+AE_FORCEINLINE void compiler_fence(memory_order_ order) AE_NO_TSAN
 {
     switch (order) {
-        case memory_order_relaxed: break;
-        case memory_order_acquire: std::atomic_signal_fence(std::memory_order_acquire); break;
-        case memory_order_release: std::atomic_signal_fence(std::memory_order_release); break;
-        case memory_order_acq_rel: std::atomic_signal_fence(std::memory_order_acq_rel); break;
-        case memory_order_seq_cst: std::atomic_signal_fence(std::memory_order_seq_cst); break;
+        case memory_order_relaxed_: break;
+        case memory_order_acquire_: std::atomic_signal_fence(std::memory_order_acquire); break;
+        case memory_order_release_: std::atomic_signal_fence(std::memory_order_release); break;
+        case memory_order_acq_rel_: std::atomic_signal_fence(std::memory_order_acq_rel); break;
+        case memory_order_seq_cst_: std::atomic_signal_fence(std::memory_order_seq_cst); break;
         default: assert(false);
     }
 }
 
-AE_FORCEINLINE void fence(memory_order order) AE_NO_TSAN
+AE_FORCEINLINE void fence(memory_order_ order) AE_NO_TSAN
 {
     switch (order) {
-        case memory_order_relaxed: break;
-        case memory_order_acquire: AE_TSAN_ANNOTATE_ACQUIRE(); std::atomic_thread_fence(std::memory_order_acquire); break;
-        case memory_order_release: AE_TSAN_ANNOTATE_RELEASE(); std::atomic_thread_fence(std::memory_order_release); break;
-        case memory_order_acq_rel: AE_TSAN_ANNOTATE_ACQUIRE(); AE_TSAN_ANNOTATE_RELEASE(); std::atomic_thread_fence(std::memory_order_acq_rel); break;
-        case memory_order_seq_cst: AE_TSAN_ANNOTATE_ACQUIRE(); AE_TSAN_ANNOTATE_RELEASE(); std::atomic_thread_fence(std::memory_order_seq_cst); break;
+        case memory_order_relaxed_: break;
+        case memory_order_acquire_: AE_TSAN_ANNOTATE_ACQUIRE(); std::atomic_thread_fence(std::memory_order_acquire); break;
+        case memory_order_release_: AE_TSAN_ANNOTATE_RELEASE(); std::atomic_thread_fence(std::memory_order_release); break;
+        case memory_order_acq_rel_: AE_TSAN_ANNOTATE_ACQUIRE(); AE_TSAN_ANNOTATE_RELEASE(); std::atomic_thread_fence(std::memory_order_acq_rel); break;
+        case memory_order_seq_cst_: AE_TSAN_ANNOTATE_ACQUIRE(); AE_TSAN_ANNOTATE_RELEASE(); std::atomic_thread_fence(std::memory_order_seq_cst); break;
         default: assert(false);
     }
 }

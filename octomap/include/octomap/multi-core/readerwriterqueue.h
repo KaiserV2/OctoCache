@@ -276,7 +276,7 @@ public:
         size_t blockFront = frontBlock_->front.load();
 
         if (blockFront != blockTail || blockFront != (frontBlock_->localTail = frontBlock_->tail.load())) {
-            fence(memory_order_acquire);
+            fence(memory_order_acquire_);
 
             non_empty_front_block:
             // Front block not empty, dequeue from here
@@ -285,16 +285,16 @@ public:
             //element->~T();
             blockFront = (blockFront + 1) & frontBlock_->sizeMask;
 
-            fence(memory_order_release);
+            fence(memory_order_release_);
             frontBlock_->front = blockFront;
         }
         else if (frontBlock_ != tailBlock.load()) {
-            fence(memory_order_acquire);
+            fence(memory_order_acquire_);
 
             frontBlock_ = frontBlock.load();
             blockTail = frontBlock_->localTail = frontBlock_->tail.load();
             blockFront = frontBlock_->front.load();
-            fence(memory_order_acquire);
+            fence(memory_order_acquire_);
 
             if (blockFront != blockTail) {
                 // Oh look, the front block isn't empty after all
@@ -309,7 +309,7 @@ public:
 
             size_t nextBlockFront = nextBlock->front.load();
             size_t nextBlockTail = nextBlock->localTail = nextBlock->tail.load();
-            fence(memory_order_acquire);
+            fence(memory_order_acquire_);
 
             // Since the tailBlock is only ever advanced after being written to,
             // we know there's for sure an element to dequeue on it
@@ -317,10 +317,10 @@ public:
             //AE_UNUSED(nextBlockTail);
 
             // We're done with this block, let the producer use it if it needs
-            fence(memory_order_release);		// Expose possibly pending changes to frontBlock->front from last dequeue
+            fence(memory_order_release_);		// Expose possibly pending changes to frontBlock->front from last dequeue
             frontBlock = frontBlock_ = nextBlock;
 
-            compiler_fence(memory_order_release);	// Not strictly needed
+            compiler_fence(memory_order_release_);	// Not strictly needed
 
             auto element = reinterpret_cast<T*>(frontBlock_->data + nextBlockFront * sizeof(T));
 
@@ -328,7 +328,7 @@ public:
             //element->~T();
             nextBlockFront = (nextBlockFront + 1) & frontBlock_->sizeMask;
 
-            fence(memory_order_release);
+            fence(memory_order_release_);
             frontBlock_->front = nextBlockFront;
         }
         else {
@@ -347,7 +347,7 @@ public:
         Block* frontBlock_ = frontBlock.load();
         Block* block = frontBlock_;
         do {
-            fence(memory_order_acquire);
+            fence(memory_order_acquire_);
             size_t blockFront = block->front.load();
             size_t blockTail = block->tail.load();
             result += (blockTail - blockFront) & block->sizeMask;
@@ -370,7 +370,7 @@ public:
         Block* frontBlock_ = frontBlock.load();
         Block* block = frontBlock_;
         do {
-            fence(memory_order_acquire);
+            fence(memory_order_acquire_);
             result += block->sizeMask;
             block = block->next.load();
         } while (block != frontBlock_);
@@ -402,7 +402,7 @@ public:
 
         size_t nextBlockTail = (blockTail + 1) & tailBlock_->sizeMask;
         if (nextBlockTail != blockFront || nextBlockTail != (tailBlock_->localFront = tailBlock_->front.load())) {
-            fence(memory_order_acquire);
+            fence(memory_order_acquire_);
             // This block has room for at least one more element
             char* location = tailBlock_->data + blockTail * sizeof(T);
 #if MOODYCAMEL_HAS_EMPLACE
@@ -411,24 +411,24 @@ public:
             new (location) T(std::forward<U>(element));
 #endif
 
-            fence(memory_order_release);
+            fence(memory_order_release_);
             tailBlock_->tail = nextBlockTail;
         }
         else {
-            fence(memory_order_acquire);
+            fence(memory_order_acquire_);
             if (tailBlock_->next.load() != frontBlock) {
                 // Note that the reason we can't advance to the frontBlock and start adding new entries there
                 // is because if we did, then dequeue would stay in that block, eventually reading the new values,
                 // instead of advancing to the next full block (whose values were enqueued first and so should be
                 // consumed first).
 
-                fence(memory_order_acquire);		// Ensure we get latest writes if we got the latest frontBlock
+                fence(memory_order_acquire_);		// Ensure we get latest writes if we got the latest frontBlock
 
                 // tailBlock is full, but there's a free block ahead, use it
                 Block* tailBlockNext = tailBlock_->next.load();
                 size_t nextBlockFront = tailBlockNext->localFront = tailBlockNext->front.load();
                 nextBlockTail = tailBlockNext->tail.load();
-                fence(memory_order_acquire);
+                fence(memory_order_acquire_);
 
                 // This block must be empty since it's not the head block and we
                 // go through the blocks in a circle
@@ -444,7 +444,7 @@ public:
 
                 tailBlockNext->tail = (nextBlockTail + 1) & tailBlockNext->sizeMask;
 
-                fence(memory_order_release);
+                fence(memory_order_release_);
                 tailBlock = tailBlockNext;
             }
             else {
@@ -474,7 +474,7 @@ public:
                 // case where it could try to read the next is if it's already at the tailBlock,
                 // and it won't advance past tailBlock in any circumstance).
 
-                fence(memory_order_release);
+                fence(memory_order_release_);
                 tailBlock = newBlock;
             }
         }

@@ -5,7 +5,6 @@
 #include "HashMap.h"
 #include <iostream>
 #include <queue>
-#include "GlobalVariables_Octomap.h"
 #include "OcTreeNode.h"
 #include "multi-core/readerwriterqueue.h"
 #include <atomic>
@@ -36,19 +35,8 @@ public:
     uint32_t evictNum;
     // function to feed items in the buffer to the octree
 
-    Cache(uint32_t _TABLE_SIZE, OcTree* _tree, std::string file, uint32_t _clockWait = 16) {
-        myHashMap.init(_TABLE_SIZE, _tree);
-        bufferSize = 0;
-        tree = _tree;
-        pktCount = 0; // here pkt count means the number of "duplicated insertions"
-        clockWait = _clockWait; // make it 2^n, the default is 90k / 7k
-        runThread = true;
-        // fout.open(file);
-        inOutRatio = 0.0;
-    } 
-    ~Cache() {
-        // fout.close();
-    }
+    Cache(uint32_t _TABLE_SIZE, OcTree* _tree, std::string file, uint32_t _clockWait);
+    ~Cache();
     
     void ProcessPkt(const OcTreeKey &key, const bool &value);
     void Kick();
@@ -59,6 +47,9 @@ public:
     void PrintBuffer();
     void test();
     void adjust(uint32_t PCSize);
+    double search(const OcTreeKey &key);
+    double search(double x, double y, double z);
+    void waitForEmptyBuffer();
     // void test(AbstractOcTree* tree);
 
 };

@@ -1,3 +1,6 @@
+#ifndef OCTOMAP
+#define OCTOMAP
+
 /*
  * OctoMap - An Efficient Probabilistic 3D Mapping Framework Based on Octrees
  * http://octomap.github.com/
@@ -36,3 +39,4 @@
 #include "ScanGraph.h"
 #include "OcTree.h"
 
+#endif

@@ -14,7 +14,6 @@
 #include "hash/parallel-murmur3.h"
 #include "hash/parallel-xxhash.h"
 
-
 namespace octomap{
 
 
@@ -139,18 +138,7 @@ public:
         delete[] table;
     }
 
-    float get(const OcTreeKey &key) {
-        // this function waits to be finished
-        // search each bucket after another, stops if found 10 consecutive full buckets
-        unsigned long hashValue = MortonHash(key);
-        for (auto it = table[hashValue].begin(); it != table[hashValue].end(); it++) {
-            if (it->getKey() == key) {
-                return it->occupancy;
-            }
-        }
-        // it is impossible to return a so large number as 100, note as not found
-        return 100;
-    }
+    float get(const OcTreeKey &key);
 
     void KickToBuffer(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
 
@@ -168,6 +156,8 @@ public:
     void KickToOctree();
 
     void Kick(uint32_t num, ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
+
+    int loadSize();
 
 public:
     // hash table
