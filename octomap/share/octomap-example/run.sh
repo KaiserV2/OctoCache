@@ -38,27 +38,37 @@
 # done
 
 
-for i in {1,2,3}
+
+for i in {1..7}
 do
-    # echo "$i original:" >> log.txt
-    for j in {1}
-    do
-        ./original -i $i
-    done
-    echo "\n" >> log.txt
+    ./test -i 3 -maxPCNum $i
 done
 
-for i in {1,2,3}
-do
-    for s in {1,2,4,8,16,32,64} # hash map size
-    do
-        for k in {1,2,3,4,5,6} # eviction speed
-        do
-            for j in {1}
-            do
-                ./mortonCache -i $i -s $s -k $k
-            done
-            echo "\n" >> log.txt
-        done
-    done    
-done
+# for i in {1..7}
+# do
+#     ./test -i 2 -maxPCNum $i
+# done
+
+# for i in {1,2,3}
+# do
+#     for j in {1}
+#     do
+#         ./original -i $i
+#         ./test -i $i
+#     done
+# done
+
+# for i in {1,2,3}
+# do
+#     for s in {1,2,4,8,16,32,64} # hash map size
+#     do
+#         for k in {1,2,3,4,5,6} # eviction speed
+#         do
+#             for j in {1}
+#             do
+#                 ./mortonCache -i $i -s $s -k $k
+#             done
+#             echo "\n" >> log.txt
+#         done
+#     done    
+# done

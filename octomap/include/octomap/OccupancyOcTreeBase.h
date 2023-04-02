@@ -385,10 +385,6 @@ namespace octomap {
      * @param occupied_cells keys of nodes to be marked occupied
      * @param maxrange maximum range for raycasting (-1: unlimited)
      */
-    void computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
-                       KeySet& free_cells,
-                       KeySet& occupied_cells,
-                       double maxrange, Cache* myCache);
 
     void duplicationCheck(KeySet& free_cells, KeySet& occupied_cells);
 

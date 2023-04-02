@@ -22,17 +22,17 @@ public:
     // have a buffer
     std::atomic_bool run;
     std::atomic_int bufferSize;
-    ReaderWriterQueue<Item> buffer;
+    ReaderWriterQueue<std::pair<OcTreeKey,double>> buffer;
     // std::queue<Item> buffer;
     HashMap myHashMap;
     OcTree* tree;
     std::thread thd;
     uint32_t pktCount;
     uint32_t clockWait;
-    std::ofstream fout;
     bool runThread;
     double inOutRatio;
     uint32_t evictNum;
+    uint32_t bound;
     // function to feed items in the buffer to the octree
 
     Cache(uint32_t _TABLE_SIZE, OcTree* _tree, std::string file, uint32_t _clockWait);

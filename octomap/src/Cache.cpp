@@ -55,8 +55,6 @@ namespace octomap{
         // std::cout << "[" << key.k[0] << "," << key.k[1] << "," << key.k[2] << "]," << std::endl;
         // uint32_t hashValue = this->myHashMap.ScalarHash(key);
         uint32_t hashValue = this->myHashMap.MortonHash(key);
-        // uint32_t hashValue = this->myHashMap.RoundRobin(pktCount);
-        // std::cout << 1 << std::endl;
 #if CPU_CYCLES
 #ifdef __x86_64__
         point2 = __rdtsc();
@@ -89,16 +87,16 @@ namespace octomap{
     }
 
     void Cache::Kick() {
-        myHashMap.Kick(evictNum, &buffer, bufferSize);
+        myHashMap.KickToBuffer(&buffer, bufferSize);
         return;
     }
 
 
     void DigestBuffer(std::thread* thisThd, Cache* myCache) {
-#ifdef __linux__
-        if(!setaffinity(thisThd, 0))
-            return;
-#endif
+// #ifdef __linux__
+//         if(!setaffinity(thisThd, 0))
+//             return;
+// #endif
         while (true) {
             if (!myCache->run) {
                 break;
@@ -107,11 +105,10 @@ namespace octomap{
                 mtx.lock();
                 // std::cout << "unlock" << std::endl;
                 while(myCache->bufferSize){
-                    Item item;
-                    if (myCache->buffer.try_dequeue(item)) {
+                    std::pair<OcTreeKey,double> pair;
+                    if (myCache->buffer.try_dequeue(pair)) {
                         // mtx.lock();
-                        OcTreeKey key = item.key;
-                        myCache->tree->setNodeValue(key, item.occupancy, lazy_eval);
+                        myCache->tree->setNodeValue(pair.first, pair.second, lazy_eval);
                         myCache->bufferSize--;
                         // mtx.unlock();
                         insert_to_octree++;
@@ -122,19 +119,22 @@ namespace octomap{
         }
     }
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 90f5d498fb2ac5ab26caea3f6b28f6720e97f748
 
     void OneDigestBuffer(Cache* myCache) {
         while((myCache->run) || (myCache->bufferSize != 0)) {
-            Item item;
-            while (myCache->buffer.try_dequeue(item)) { 
+            std::pair<OcTreeKey,double> pair;
+            while (myCache->buffer.try_dequeue(pair)) { 
 #if DEBUG1
                 std::cout << "Putting item to octree!" << std::endl;
 #endif
-                OcTreeKey key = item.key;
-                bool occupancy = item.occupancy;
-                if (occupancy == true) {
+                if (pair.second == true) {
                     // its an occupied voxel
-                    myCache->tree->updateNode(key, true, lazy_eval);
+                    myCache->tree->updateNode(pair.first, true, lazy_eval);
                     myCache->bufferSize--;
                     // std::cout << myCache->bufferSize << std::endl;
 #if DEBUG1
@@ -143,7 +143,7 @@ namespace octomap{
                 }
                 else {
                     // a free voxel
-                    myCache->tree->updateNode(key, false, lazy_eval);
+                    myCache->tree->updateNode(pair.first, false, lazy_eval);
                     myCache->bufferSize--;
                     // std::cout << myCache->bufferSize << std::endl;
 #if DEBUG1
@@ -208,15 +208,9 @@ namespace octomap{
         tree->test();
     }
 
-    void Cache::adjust(uint32_t PCSize) {
-        std::cout << "buffer remaining " << bufferSize << std::endl;
-        if (bufferSize > 0) { // less items shall be evicted
-            inOutRatio /= 2;
-        }
-        else { // more items shall be evicted
-            inOutRatio = (1 + inOutRatio) / 2;
-        }
-        evictNum = inOutRatio * PCSize;
+    void Cache::adjust() {
+        // adjust how many PCs can be kept in the cache
+        return;
     }
 
     double Cache::search(const OcTreeKey &key) {

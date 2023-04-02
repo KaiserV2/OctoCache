@@ -195,10 +195,12 @@ void outputStatistics(const OcTree* tree){
 
 int main(int argc, char** argv) {
   // default values:
-  double res = 0.2;
+  double res = 0.1;
   string datasetname = "fr_079";
   string treeFilename = "output";
   uint32_t hashMapSize = 1 << 16;
+  uint32_t bound = 10;
+  uint32_t maxPCNum = 1;
   uint32_t clockSpeed = 1;
   string ss;
   string sk;
@@ -217,7 +219,7 @@ int main(int argc, char** argv) {
   double probMiss = emptyTree.getProbMiss();
   double probHit = emptyTree.getProbHit();
 
-  SpecifyThread();
+  // SpecifyThread();
   timeval start; 
   timeval stop;
   timeval stop1;  
@@ -236,7 +238,7 @@ int main(int argc, char** argv) {
       }
       else if (graphFileNum == "3"){
         datasetname = "new_college";
-        hashMapSize = 1 << 12;
+        hashMapSize = 1 << 13;
       }
       else{ // default
         datasetname = "fr_079";
@@ -250,6 +252,14 @@ int main(int argc, char** argv) {
     else if (! strcmp(argv[arg], "-k")){
       sk = std::string(argv[++arg]);
       clockSpeed *= stoi(sk);
+    }
+    else if (! strcmp(argv[arg], "-b")){
+      string b = std::string(argv[++arg]);
+      bound = stoi(b);
+    }
+    else if (! strcmp(argv[arg], "-maxPCNum")){
+      string s = std::string(argv[++arg]);
+      maxPCNum = stoi(s);
     }
     else if (!strcmp(argv[arg], "-o"))
       treeFilename = std::string(argv[++arg]);

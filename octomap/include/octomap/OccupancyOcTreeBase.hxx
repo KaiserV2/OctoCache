@@ -100,13 +100,14 @@ namespace octomap {
     if (discretize)
       computeDiscreteUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
     else
-      computeUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange, myCache);
+      computeUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
 
 
 #if USE_NEW_CACHE
     // insert data into tree  -----------------------
-    myCache->adjust(free_cells.size() + occupied_cells.size());
+    myCache->adjust();
     mtx.lock();
+    // std::cout << "buffer size " << myCache->bufferSize << std::endl;
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
       myCache->ProcessPkt(*it, 0);
     }
@@ -114,6 +115,7 @@ namespace octomap {
       myCache->ProcessPkt(*it, 1);
     }
     mtx.unlock();
+    myCache->Kick();
 #endif
     pointCloudCount++;
     myCache->myHashMap.currentPointCloud++;
@@ -215,107 +217,6 @@ namespace octomap {
 
    computeUpdate(discretePC, origin, free_cells, occupied_cells, maxrange);
  }
-
-
-  template <class NODE>
-  void OccupancyOcTreeBase<NODE>::computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
-                                                KeySet& free_cells, KeySet& occupied_cells,
-                                                double maxrange, Cache* myCache)
-  {
-
-#ifdef _OPENMP
-    // omp_set_num_threads(this->keyrays.size());
-    #pragma omp parallel for schedule(guided)
-#endif
-    for (int i = 0; i < (int)scan.size(); ++i) {
-      const point3d& p = scan[i];
-      unsigned threadIdx = 0;
-#ifdef _OPENMP
-      threadIdx = omp_get_thread_num();
-#endif
-      KeyRay* keyray = &(this->keyrays.at(threadIdx));
-
-
-      if (!use_bbx_limit) { // no BBX specified
-        if ((maxrange < 0.0) || ((p - origin).norm() <= maxrange) ) { // is not maxrange meas.
-          // free cells
-          if (this->computeRayKeys(origin, p, *keyray)){
-#ifdef _OPENMP
-            #pragma omp critical (free_insert)
-#endif
-            {
-#if USE_CACHE
-              for (auto it = keyray->begin(); it != keyray->end(); it++) {
-                myCache->ProcessPkt(*it, 0);
-              }
-#else
-              free_cells.insert(keyray->begin(), keyray->end());
-#endif
-            }
-          }
-          // occupied endpoint
-          OcTreeKey key;
-          if (this->coordToKeyChecked(p, key)){
-#ifdef _OPENMP
-            #pragma omp critical (occupied_insert)
-#endif
-            {
-#if USE_CACHE
-              myCache->ProcessPkt(key, 1);
-#else
-              occupied_cells.insert(key);
-#endif
-            }
-          }
-        } else { // user set a maxrange and length is above
-          point3d direction = (p - origin).normalized ();
-          point3d new_end = origin + direction * (float) maxrange;
-          if (this->computeRayKeys(origin, new_end, *keyray)){
-#ifdef _OPENMP
-            #pragma omp critical (free_insert)
-#endif
-            {
-              free_cells.insert(keyray->begin(), keyray->end());
-            }
-          }
-        } // end if maxrange
-      } else { // BBX was set
-        // endpoint in bbx and not maxrange?
-        if ( inBBX(p) && ((maxrange < 0.0) || ((p - origin).norm () <= maxrange) ) )  {
-
-          // occupied endpoint
-          OcTreeKey key;
-          if (this->coordToKeyChecked(p, key)){
-#ifdef _OPENMP
-            #pragma omp critical (occupied_insert)
-#endif
-            {
-              // occupied_cells.insert(key);
-            }
-          }
-
-          // update freespace, break as soon as bbx limit is reached
-          if (this->computeRayKeys(origin, p, *keyray)){
-            for(KeyRay::reverse_iterator rit=keyray->rbegin(); rit != keyray->rend(); rit++) {
-              if (inBBX(*rit)) {
-#ifdef _OPENMP
-                #pragma omp critical (free_insert)
-#endif
-                {
-                  // free_cells.insert(*rit);
-                }
-              }
-              else break;
-            }
-          } // end if compute ray
-        } // end if in BBX and not maxrange
-      } // end bbx case
-
-    } // end for all points, end of parallel OMP loop
-#if USE_NEW_CACHE
-    duplicationCheck(free_cells, occupied_cells);
-#endif
-  }
 
 
   template <class NODE>

@@ -10,6 +10,7 @@
 #include <bitset>
 #include <string.h>
 #include "OcTreeKey.h"
+#include "data-structure/CircularQueue.h"
 #include "multi-core/readerwriterqueue.h"
 #include "hash/parallel-murmur3.h"
 #include "hash/parallel-xxhash.h"
@@ -125,24 +126,32 @@ public:
 
     }
 
-    void init(uint32_t _TABLE_SIZE, OcTree* _tree) {
+    void init(uint32_t _TABLE_SIZE, OcTree* _tree, uint32_t _bound, uint32_t _maxPCNum) {
         // construct zero initialized hash table of size
         TABLE_SIZE = _TABLE_SIZE;
-        table = new std::vector<HashNode>[TABLE_SIZE];
-        clock = 0;
+        // table = new std::vector<HashNode>[TABLE_SIZE];
+        table = new CircularQueue<OcTreeKey, double>[TABLE_SIZE];
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            table[i].init(_bound);
+        }
+        clockCounters = new uint8_t[TABLE_SIZE];
+        memset(clockCounters, 0, TABLE_SIZE);
         currentPointCloud = 0;
         tree = _tree;
+        bound = _bound;
+        maxPCNum = _maxPCNum;
     }
 
     ~HashMap() {
-        delete[] table;
+        delete table;
+        delete[] clockCounters;
     }
 
     float get(const OcTreeKey &key);
 
-    void KickToBuffer(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
+    void KickToBuffer(ReaderWriterQueue<std::pair<OcTreeKey,double>>* q, std::atomic_int& bufferSize);
 
-    void put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue);
+    void put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue, ReaderWriterQueue<std::pair<OcTreeKey,double>>* q);
 
     uint32_t ScalarHash(const OcTreeKey &key);
 
@@ -151,24 +160,24 @@ public:
     uint32_t RoundRobin(uint32_t count);
 
     // when the whole workflow ends, clean all the items that are stalk within the cache
-    void cleanHashMap(ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
+    void cleanHashMap(ReaderWriterQueue<std::pair<OcTreeKey,double>>* q, std::atomic_int& bufferSize);
 
     void KickToOctree();
 
-    void Kick(uint32_t num, ReaderWriterQueue<Item>* q, std::atomic_int& bufferSize);
+    void Kick(int num, ReaderWriterQueue<std::pair<OcTreeKey,double>>* q, std::atomic_int& bufferSize);
 
     int loadSize();
 
 public:
     // hash table
-    std::vector<HashNode> *table;
+    // std::vector<HashNode> *table;
+    CircularQueue<OcTreeKey, double> *table;
+    uint32_t maxPCNum; // the maximum number of point clouds
+    uint8_t* clockCounters; // the maximum number of point clouds in the cache is 7 (if >=8, change into a uint16_t...)
     uint32_t TABLE_SIZE;
-    uint32_t Columns = 4;
-    uint32_t clock;
-    uint32_t currentPointCloud; // # of current inserting point cloud
     OcTree* tree;
-    uint32_t OcTreeKeyBuffer[3][8];
-    OcTreeKeyValuePair BufferedPairs[8];
+    uint32_t currentPointCloud;
+    uint32_t bound = 12;
 };
 
 }
