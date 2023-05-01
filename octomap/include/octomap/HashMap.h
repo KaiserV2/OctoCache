@@ -15,6 +15,8 @@
 #include "hash/parallel-murmur3.h"
 #include "hash/parallel-xxhash.h"
 
+#define USE_CQ true // true for using circular queue, false for using vector (not completed)
+
 namespace octomap{
 
 
@@ -126,7 +128,7 @@ public:
 
     }
 
-    void init(uint32_t _TABLE_SIZE, OcTree* _tree, uint32_t _bound, uint32_t _maxPCNum) {
+    void init(uint32_t _TABLE_SIZE, uint32_t _bound, OcTree* _tree) {
         // construct zero initialized hash table of size
         TABLE_SIZE = _TABLE_SIZE;
         // table = new std::vector<HashNode>[TABLE_SIZE];
@@ -139,7 +141,6 @@ public:
         currentPointCloud = 0;
         tree = _tree;
         bound = _bound;
-        maxPCNum = _maxPCNum;
     }
 
     ~HashMap() {
@@ -171,8 +172,11 @@ public:
 public:
     // hash table
     // std::vector<HashNode> *table;
+#if USE_CQ
     CircularQueue<OcTreeKey, double> *table;
-    uint32_t maxPCNum; // the maximum number of point clouds
+#else
+    std::vector<HashNode> *table;
+#endif
     uint8_t* clockCounters; // the maximum number of point clouds in the cache is 7 (if >=8, change into a uint16_t...)
     uint32_t TABLE_SIZE;
     OcTree* tree;

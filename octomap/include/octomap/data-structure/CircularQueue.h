@@ -37,6 +37,7 @@ class CircularQueue {
     std::pair<K,V> getPair(int i);
     void clear();
     void update(int pos, const V &value);
+    void replace(int pos, const V &value);
     inline V& getValue(int pos);
     inline K& getKey(int pos);
     inline bool isFull();
@@ -136,6 +137,12 @@ template<class K, class V>
 void CircularQueue<K, V>::update(int pos, const V &value) 
 {
   _values[pos] += value;
+}
+
+template<class K, class V>
+void CircularQueue<K, V>::replace(int pos, const V &value) 
+{
+  _values[pos] = value;
 }
 
 template<class K, class V>

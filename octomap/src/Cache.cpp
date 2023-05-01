@@ -31,8 +31,8 @@ namespace octomap{
     }
 #endif
 
-    Cache::Cache(uint32_t _TABLE_SIZE, OcTree* _tree, std::string file, uint32_t _clockWait = 16) {
-        myHashMap.init(_TABLE_SIZE, _tree);
+    Cache::Cache(uint32_t _tableSize, uint32_t _tableWidth, OcTree* _tree, uint32_t _clockWait) {
+        myHashMap.init(_tableSize, _tableWidth, _tree);
         bufferSize = 0;
         tree = _tree;
         pktCount = 0; // here pkt count means the number of "duplicated insertions"
@@ -60,7 +60,7 @@ namespace octomap{
         point2 = __rdtsc();
 #endif
 #endif
-        this->myHashMap.put(key, value, hashValue);
+        this->myHashMap.put(key, value, hashValue, &buffer);
         // std::cout << 2 << std::endl;
 #if CPU_CYCLES
 #ifdef __x86_64__
@@ -118,12 +118,6 @@ namespace octomap{
             }
         }
     }
-
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 90f5d498fb2ac5ab26caea3f6b28f6720e97f748
 
     void OneDigestBuffer(Cache* myCache) {
         while((myCache->run) || (myCache->bufferSize != 0)) {
@@ -206,11 +200,6 @@ namespace octomap{
 
     void Cache::test(){
         tree->test();
-    }
-
-    void Cache::adjust() {
-        // adjust how many PCs can be kept in the cache
-        return;
     }
 
     double Cache::search(const OcTreeKey &key) {

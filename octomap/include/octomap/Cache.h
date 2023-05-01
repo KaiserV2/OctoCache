@@ -28,14 +28,14 @@ public:
     OcTree* tree;
     std::thread thd;
     uint32_t pktCount;
-    uint32_t clockWait;
+    uint32_t clockWait = 16;
     bool runThread;
     double inOutRatio;
     uint32_t evictNum;
     uint32_t bound;
     // function to feed items in the buffer to the octree
 
-    Cache(uint32_t _TABLE_SIZE, OcTree* _tree, std::string file, uint32_t _clockWait);
+    Cache(uint32_t _tableSize, uint32_t _tableWidth, OcTree* _tree, uint32_t _clockWait);
     ~Cache();
     
     void ProcessPkt(const OcTreeKey &key, const bool &value);

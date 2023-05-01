@@ -105,7 +105,7 @@ namespace octomap {
 
 #if USE_NEW_CACHE
     // insert data into tree  -----------------------
-    myCache->adjust();
+    // myCache->adjust();
     mtx.lock();
     // std::cout << "buffer size " << myCache->bufferSize << std::endl;
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
