@@ -70,6 +70,9 @@ namespace octomap {
   class OccupancyOcTreeBase : public OcTreeBaseImpl<NODE,AbstractOccupancyOcTree> {
 
   public:
+#if USE_NEW_CACHE
+    Cache* myCache;
+#endif
     /// Default constructor, sets resolution of leafs
     OccupancyOcTreeBase(double resolution);
     virtual ~OccupancyOcTreeBase();

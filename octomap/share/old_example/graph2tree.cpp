@@ -1,7 +1,34 @@
 /*
-use 2 octrees, one with cache and the other without
-same trace, inserted to tree1 first and tree2+cache afterwards
-We test the final query result on the 2 data structures by randomly generating query results
+ * OctoMap - An Efficient Probabilistic 3D Mapping Framework Based on Octrees
+ * http://octomap.github.com/
+ *
+ * Copyright (c) 2009-2013, K.M. Wurm and A. Hornung, University of Freiburg
+ * All rights reserved.
+ * License: New BSD
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the University of Freiburg nor the names of its
+ *       contributors may be used to endorse or promote products derived from
+ *       this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <string.h>
@@ -21,10 +48,7 @@ using namespace std;
 using namespace octomap;
 
 
-#define USE_NEW_CACHE false
-
-
-void testQueries(OcTree* tree1, OcTree* tree2){
+void testQueries(Cache* myCache, OcTree* tree){
   cout << tree->getClampingThresMinLog() << " " << tree->getClampingThresMaxLog() << endl;
   const uint16_t keys[15][3] = {
         {32897, 32762, 32767},
@@ -168,10 +192,12 @@ void outputStatistics(const OcTree* tree){
 
 int main(int argc, char** argv) {
   // default values:
-  double res = 0.2;
+  double res = 0.1;
   string datasetname = "fr_079";
   string treeFilename = "output";
   uint32_t hashMapSize = 1 << 16;
+  uint32_t bound = 10;
+  uint32_t maxPCNum = 1;
   uint32_t clockSpeed = 1;
   string ss;
   string sk;
@@ -190,7 +216,7 @@ int main(int argc, char** argv) {
   double probMiss = emptyTree.getProbMiss();
   double probHit = emptyTree.getProbHit();
 
-  SpecifyThread();
+  // SpecifyThread();
   timeval start; 
   timeval stop;
   timeval stop1;  
@@ -209,7 +235,7 @@ int main(int argc, char** argv) {
       }
       else if (graphFileNum == "3"){
         datasetname = "new_college";
-        hashMapSize = 1 << 12;
+        hashMapSize = 1 << 13;
       }
       else{ // default
         datasetname = "fr_079";
@@ -223,6 +249,14 @@ int main(int argc, char** argv) {
     else if (! strcmp(argv[arg], "-k")){
       sk = std::string(argv[++arg]);
       clockSpeed *= stoi(sk);
+    }
+    else if (! strcmp(argv[arg], "-b")){
+      string b = std::string(argv[++arg]);
+      bound = stoi(b);
+    }
+    else if (! strcmp(argv[arg], "-maxPCNum")){
+      string s = std::string(argv[++arg]);
+      maxPCNum = stoi(s);
     }
     else if (!strcmp(argv[arg], "-o"))
       treeFilename = std::string(argv[++arg]);
@@ -329,51 +363,49 @@ int main(int argc, char** argv) {
 
   cout << "\nCreating tree\n===========================\n";
 
-  OcTree * tree1 = new OcTree(res); // single tree
-  OcTree * tree2 = new OcTree(res); // tree with cache
+  OcTree * tree = new OcTree(res);
   
-
+#if USE_CACHE | USE_NEW_CACHE
   string filename = "/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/" + datasetname + ".txt";
-  Cache* myCache = new Cache(hashMapSize, tree2, filename, clockSpeed);
-  tree2->myCache = myCache;
+  Cache* myCache = new Cache(hashMapSize, tree, filename, clockSpeed);
+  tree->myCache = myCache;
+#endif
 
+  tree->setClampingThresMin(clampingMin);
+  tree->setClampingThresMax(clampingMax);
+  tree->setProbHit(probHit);
+  tree->setProbMiss(probMiss);
 
-  tree1->setClampingThresMin(clampingMin);
-  tree1->setClampingThresMax(clampingMax);
-  tree1->setProbHit(probHit);
-  tree1->setProbMiss(probMiss);
-
-  tree2->setClampingThresMin(clampingMin);
-  tree2->setClampingThresMax(clampingMax);
-  tree2->setProbHit(probHit);
-  tree2->setProbMiss(probMiss);
 
   
   // uint64_t point1 = __rdtsc();
   size_t numScans = graph->size();
   size_t currentScan = 1;
-
-
+  fstream fout;
+  fout.open("/proj/softmeasure-PG0/Peiqing/Test/distribution.txt");
   gettimeofday(&start, NULL);  // start timer
   for (ScanGraph::iterator scan_it = graph->begin(); scan_it != graph->end(); scan_it++) {
     if (max_scan_no > 0) cout << "("<<currentScan << "/" << max_scan_no << ") " << flush;
     // else cout << "("<<currentScan << "/" << numScans << ") " << flush;
     if (simpleUpdate)
-      tree1->insertPointCloudRays((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange);
+      tree->insertPointCloudRays((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange);
     else{
 #if USE_CACHE | USE_NEW_CACHE
       tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), tree->myCache, maxrange, false, discretize);
 #else
-      tree1->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange, false, discretize);
+      tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange, false, discretize);
 #endif
     }
+    // cout << myCache->myHashMap.itemCount << endl;
+    // myCache->myHashMap.itemCount = 0;  
+
     if (compression == 2){
-      tree1->toMaxLikelihood();
-      tree1->prune();
+      tree->toMaxLikelihood();
+      tree->prune();
     }
 
     if (detailedLog)
-      logfile << currentScan << " " << tree1->memoryUsage() << " " << tree1->memoryFullGrid() << "\n";
+      logfile << currentScan << " " << tree->memoryUsage() << " " << tree->memoryFullGrid() << "\n";
 
     if ((max_scan_no > 0) && (currentScan == (unsigned int) max_scan_no))
       break;
@@ -384,7 +416,9 @@ int main(int argc, char** argv) {
     // fout << endl;
   }
   gettimeofday(&stop, NULL);  // stop timer
-
+#if DEBUG2
+  cout << endl << myCache->bufferSize << endl;
+#endif
 
 #if USE_CACHE | USE_NEW_CACHE
   tree->myCache->EndThread();

@@ -43,84 +43,14 @@
 #include <octomap/Param.h>
 #include <omp.h>
 #include <sys/time.h>
+#include "search.h"
+#include "castRay.h"
+#include "minmax.h"
 
 using namespace std;
 using namespace octomap;
 
 
-#define USE_NEW_CACHE true
-
-
-void testQueries(Cache* myCache, OcTree* tree){
-  cout << tree->getProbHitLog() << " " << tree->getProbMissLog() << endl;
-  cout << tree->getClampingThresMinLog() << " " << tree->getClampingThresMaxLog() << endl;
-  const uint16_t keys[15][3] = {
-        {32897, 32762, 32767},
-        {32903, 32762, 32767},
-        {32904, 32762, 32767},
-        {32905, 32762, 32767},
-        {32906, 32762, 32767},
-        {32915, 32762, 32767},
-        {32916, 32762, 32767},
-        {32917, 32762, 32767},
-        {32918, 32762, 32767},
-        {32919, 32762, 32767},
-        {32920, 32762, 32767},
-        {32784, 32773, 32777},
-        {32921, 32762, 32767},
-        {32785, 32773, 32777},
-        {32789, 32773, 32777}
-    };
-    for (int i = 0; i < 15; i++) {
-      // form OcTreeKeys
-      OcTreeKey key(keys[i][0],keys[i][1],keys[i][2]);
-      float ans = myCache->search(key);
-      if (ans == bigNumber) { // need to seach in Octree
-        auto ans = tree->search(key);
-        if (ans == NULL) {
-          cout << "error " << endl;
-        }
-        else {
-          cout << ans->getOccupancy() << endl;
-        }
-      }
-      else {
-        cout << ans << endl; // gives cache answer
-      }
-    }
-}
-
-void testQueries(OcTree* tree){
-  cout << tree->getClampingThresMinLog() << " " << tree->getClampingThresMaxLog() << endl;
-  const uint16_t keys[15][3] = {
-        {32897, 32762, 32767},
-        {32903, 32762, 32767},
-        {32904, 32762, 32767},
-        {32905, 32762, 32767},
-        {32906, 32762, 32767},
-        {32915, 32762, 32767},
-        {32916, 32762, 32767},
-        {32917, 32762, 32767},
-        {32918, 32762, 32767},
-        {32919, 32762, 32767},
-        {32920, 32762, 32767},
-        {32784, 32773, 32777},
-        {32921, 32762, 32767},
-        {32785, 32773, 32777},
-        {32789, 32773, 32777}
-  };
-  for (int i = 0; i < 15; i++) {
-    // form OcTreeKeys
-    OcTreeKey key(keys[i][0],keys[i][1],keys[i][2]);
-    auto ans = tree->search(key);
-    if (ans == NULL) {
-      cout << "error " << endl;
-    }
-    else {
-      cout << ans->getOccupancy() << endl;
-    }
-  }
-}
 
 
 void printUsage(char* self){
@@ -321,7 +251,6 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
-
   std::string treeFilenameOT = treeFilename + ".ot";
   std::string treeFilenameMLOT = treeFilename + "_ml.ot";
 
@@ -371,8 +300,7 @@ int main(int argc, char** argv) {
   
 #if USE_CACHE | USE_NEW_CACHE
   string filename = "/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/" + datasetname + ".txt";
-  Cache* myCache = new Cache(hashMapSize, bound, tree, clockSpeed);
-  tree->myCache = myCache;
+  tree->myCache = new Cache(hashMapSize, bound, tree, clockSpeed);
 #endif
 
   tree->setClampingThresMin(clampingMin);
@@ -380,7 +308,11 @@ int main(int argc, char** argv) {
   tree->setProbHit(probHit);
   tree->setProbMiss(probMiss);
 
-
+#if USE_NEW_CACHE
+  testMinMax(tree->myCache, tree);
+#else 
+  testMinMax(tree);
+#endif
   
   // uint64_t point1 = __rdtsc();
   size_t numScans = graph->size();
@@ -452,10 +384,11 @@ cout << "octree insertion time " << insert_time << endl;
 cout << "ray tracing time " << raytrace_time << endl;
 
 #if USE_NEW_CACHE
-  testQueries(myCache, tree);
+  testMinMax(tree->myCache, tree);
 #else 
-  testQueries(tree);
+  testMinMax(tree);
 #endif
+
 
   return 0;
 

@@ -24,6 +24,9 @@ class CircularQueue {
     }
     ~CircularQueue() {
       delete[] _keys;
+      for (int i = 0; i < _maxitems; i++) {
+        delete _values[i];
+      }
       delete[] _values;
     }
     inline int count();
@@ -104,6 +107,7 @@ void CircularQueue<K, V>::pop() { // pop the last element
     return;
   }
   else {
+    delete _values[_back];
     _back--;
     if (_back < 0) {
       _back = _maxitems;

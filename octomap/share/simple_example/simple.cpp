@@ -1,16 +1,10 @@
-// $Id: simple.cpp 271 2011-08-19 10:02:26Z kai_wurm $
-
-/**
-* OctoMap:
-* A probabilistic, flexible, and compact 3D mapping library for robotic systems.
-* @author K. M. Wurm, A. Hornung, University of Freiburg, Copyright (C) 2009.
-* @see http://octomap.sourceforge.net/
-* License: New BSD License
-*/
-
 /*
- * Copyright (c) 2009, K. M. Wurm, A. Hornung, University of Freiburg
+ * OctoMap - An Efficient Probabilistic 3D Mapping Framework Based on Octrees
+ * http://octomap.github.com/
+ *
+ * Copyright (c) 2009-2013, K.M. Wurm and A. Hornung, University of Freiburg
  * All rights reserved.
+ * License: New BSD
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -37,112 +31,93 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <octomap/octomap.h>
 #include <octomap/OcTree.h>
-#include <octomap/OcTreeKey.h>
+#include "castRay.h"
 
-#include <iostream>
-#include <string.h>
-#include <fstream>
-#include <algorithm>
-
+using namespace std;
 using namespace octomap;
 
+// #define USE_NEW_CACHE false
 
-
-
-std::string datasetname;
-OcTree* tree = new OcTree(0.1);
-std::ifstream fin;
-// OcTreeKey keys[6265381];
-// OcTreeKey keys[209517632];
-OcTreeKey keys[317490869];
-bool occupancy;
-uint32_t pktCount = 0;
-uint32_t pcCount = 0;
-
-bool ReadKey(std::ifstream& fin){
-    std::string line;
-    if (getline(fin, line)){
-        if (line == "next") {
-            if (getline(fin, line)){
-                pcCount++;
-                // std::cout << pcCount << std::endl;
-            }
-            else{
-                return false;
-            }
-        }
-        uint32_t pos1 = line.find(" ", 0);
-        uint32_t pos2 = line.find(" ", pos1 + 1);
-        uint32_t pos3 = line.find(" ", pos2 + 1);
-        
-        std::string k1 = line.substr(0, pos1);
-        std::string k2 = line.substr(pos1 + 1, pos2 - pos1 - 1);
-        std::string k3 = line.substr(pos2 + 1, pos3 - pos2 - 1);
-        std::string occ = line.substr(pos3 + 1, 1);
-        keys[pktCount] = OcTreeKey(stoi(k1), stoi(k2), stoi(k3));
-        pktCount++;
-        occupancy = stoi(occ);
-        return true;
-    }
-    else{
-        return false;
-    }
+void print_query_info(point3d query, OcTreeNode* node) {
+  if (node != NULL) {
+    cout << "occupancy probability at " << query << ":\t " << node->getOccupancy() << endl;
+  }
+  else 
+    cout << "occupancy probability at " << query << ":\t is unknown" << endl;    
 }
 
+int main(int /*argc*/, char** /*argv*/) {
 
-int main(int argc, char** argv) {
-    int arg = 0;
-    std::string graphFileNum;
-    std::string mapSizeNum;
-    std::string hashMapNum;
-    std::string hashMapSize;
+  cout << endl;
+  cout << "generating example map" << endl;
 
-    while (++arg < argc) {
-        if (! strcmp(argv[arg], "-i")){
-            graphFileNum = std::string(argv[++arg]);
-            if (graphFileNum == "1"){
-                datasetname = "1";
-            }
-            else if (graphFileNum == "2"){
-                datasetname = "2";
-            }
-            else if (graphFileNum == "3"){
-                datasetname = "3";
-            }
-            else{ // default
-                datasetname = "1";
-            }
-        }
-        if (! strcmp(argv[arg], "-s")){
-            hashMapNum = std::string(argv[++arg]);
-            if (hashMapNum == "4"){
-                hashMapSize = "4";
-            }
-            else if (hashMapNum == "6"){
-                hashMapSize = "6";
-            }
-            else if (hashMapNum == "8"){
-                hashMapSize = "8";
-            }
-        }
+  OcTree tree (0.1);  // create empty tree with resolution 0.1
+#if USE_NEW_CACHE
+  tree.myCache = new Cache(1<<10, 12, &tree, 1);
+#endif
+
+  // insert some measurements of occupied cells
+
+  for (int x=-20; x<20; x++) {
+    for (int y=-20; y<20; y++) {
+      for (int z=-20; z<20; z++) {
+        point3d endpoint ((float) x*0.05f, (float) y*0.05f, (float) z*0.05f);
+#if USE_NEW_CACHE
+        OcTreeKey key = tree.coordToKey(endpoint);
+        tree.myCache->updateNode(key, true); // integrate 'occupied' measurement
+#else
+        tree.updateNode(endpoint, true); // integrate 'occupied' measurement
+#endif
+      }
     }
-    std::string fileName;
-    if(hashMapNum == ""){
-        fileName = "/home/peiqing/Dataset/Octomap/OctreeInsertion/"+datasetname+".txt";
+  }
+
+  // insert some measurements of free cells
+
+  for (int x=-30; x<30; x++) {
+    for (int y=-30; y<30; y++) {
+      for (int z=-30; z<30; z++) {
+        point3d endpoint ((float) x*0.02f-1.0f, (float) y*0.02f-1.0f, (float) z*0.02f-1.0f);
+#if USE_NEW_CACHE
+        OcTreeKey key = tree.coordToKey(endpoint);
+        tree.myCache->updateNode(key, false);  // integrate 'free' measurement
+#else
+        tree.updateNode(endpoint, false);  // integrate 'free' measurement
+#endif
+      }
     }
-    else{
-        fileName = "/home/peiqing/Dataset/Octomap/OctreeInsertion/"+datasetname+"hash"+hashMapSize+".txt";
+  }
+
+
+  for (int i = 0; i <= 16; i++) {
+    int count = 0;
+    for (auto it = tree.begin(i); it != tree.end(); ++it) {
+      count++;
     }
-    std::cout << fileName << std::endl;
-    fin.open(fileName);
-    while(ReadKey(fin)){
-        
-    }
-    // std::random_shuffle(&keys[0], &keys[pktCount - 1]);
-    for (int i = 0; i < pktCount; i++) {
-        tree->updateNode(keys[i], occupancy, false);
-    }
-    std::cout << pktCount << std::endl;
-    return 0;
+    cout << i << " " << count << endl;
+  }
+//   cout << endl;
+//   cout << "performing some queries:" << endl;
+  
+//   point3d query (0., 0., 0.);
+//   OcTreeNode* result = tree.search (query);
+//   print_query_info(query, result);
+
+//   query = point3d(-1.,-1.,-1.);
+//   result = tree.search (query);
+//   print_query_info(query, result);
+
+//   query = point3d(1.,1.,1.);
+//   result = tree.search (query);
+//   print_query_info(query, result);
+
+
+//   cout << endl;
+//   tree.writeBinary("simple_tree.bt");
+//   cout << "wrote example file simple_tree.bt" << endl << endl;
+//   cout << "now you can use octovis to visualize: octovis simple_tree.bt"  << endl;
+//   cout << "Hint: hit 'F'-key in viewer to see the freespace" << endl  << endl;  
+
 }

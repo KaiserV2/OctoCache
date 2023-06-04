@@ -45,45 +45,24 @@ namespace octomap{
 
     Cache::~Cache(){}
 
-    void Cache::ProcessPkt(const OcTreeKey &key, const bool &value){
+    void Cache::updateNode(const OcTreeKey& key, bool occupied, bool lazy_eval){
 #if CPU_CYCLES
         uint64_t point1, point2, point3, point4;
-#ifdef __x86_64__
-        point1 = __rdtsc();
-#endif
 #endif
         // std::cout << "[" << key.k[0] << "," << key.k[1] << "," << key.k[2] << "]," << std::endl;
         // uint32_t hashValue = this->myHashMap.ScalarHash(key);
         uint32_t hashValue = this->myHashMap.MortonHash(key);
 #if CPU_CYCLES
-#ifdef __x86_64__
-        point2 = __rdtsc();
 #endif
-#endif
-        this->myHashMap.put(key, value, hashValue, &buffer);
+        this->myHashMap.put(key, occupied, hashValue, &buffer, bufferSize);
         // std::cout << 2 << std::endl;
 #if CPU_CYCLES
-#ifdef __x86_64__
-        point3 = __rdtsc();
-#endif
 #endif
         return; // we do the eviction outside
-
         pktCount++;
         if (pktCount % clockWait == 0) {
             this->myHashMap.KickToBuffer(&buffer, bufferSize);
-#if CPU_CYCLES
-#ifdef __x86_64__
-            point4 = __rdtsc();
-#endif
-            kick_time +=  point4 - point3;
-#endif
         }
-#if CPU_CYCLES
-        hash_time +=  point2 - point1;
-        put_time +=  point3 - point2;
-#endif
-        // std::cout << 3 << std::endl;
     }
 
     void Cache::Kick() {
@@ -202,21 +181,34 @@ namespace octomap{
         tree->test();
     }
 
-    double Cache::search(const OcTreeKey &key) {
-        // make sure the buffer is emtpy
-        double logodds =  myHashMap.get(key); // if get() not found, will return bigNumber
-        if (logodds == bigNumber) {
-            return bigNumber;
+    OcTreeNode* Cache::search(const OcTreeKey &key, unsigned int depth) {
+        OcTreeNode* node = myHashMap.get(key);
+        if (node != NULL) {
+            // std::cout << "found in cache" << std::endl;
+            return node;
         }
-        return 1. - ( 1. / (1. + exp(logodds)));
+        // std::cout << "search in tree" << std::endl;
+        node = tree->search(key);
+        return node;
     }
 
-    double Cache::search(double x, double y, double z) {
+    OcTreeNode* Cache::search(const point3d& value, unsigned int depth) { // remember to delete the node after return
+        OcTreeKey key;
+        if (!tree->coordToKeyChecked(value, key)){
+            OCTOMAP_ERROR_STR("Error in search: ["<< value <<"] is out of OcTree bounds!");
+            return NULL;
+        }
+        else {
+            return search(key, depth);
+        }
+    }
+
+    OcTreeNode* Cache::search(double x, double y, double z, unsigned int depth) {
         // first convert into OcTreeKey
         OcTreeKey key;
         if (!tree->coordToKeyChecked(x, y, z, key)){ // if the coordinates does not correspond to a valid key
             OCTOMAP_ERROR_STR("Error in search: ["<< x <<" "<< y << " " << z << "] is out of OcTree bounds!");
-            return bigNumber;
+            return NULL;
         }
         else {
             return search(key);
@@ -225,5 +217,9 @@ namespace octomap{
 
     void Cache::waitForEmptyBuffer() {
         while(bufferSize) {}
+    }
+
+    void Cache::flush() {
+        
     }
 }

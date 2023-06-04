@@ -44,6 +44,7 @@
 #include "octomap_types.h"
 #include "OcTreeKey.h"
 #include "ScanGraph.h"
+#include "Param.h"
 
 
 namespace octomap {
@@ -239,6 +240,9 @@ namespace octomap {
 
     /// \return The number of nodes in the tree
     virtual inline size_t size() const { return tree_size; }
+
+    /// \return If the tree or cache has been updated
+    virtual inline bool changed() const { return (min_max_changed | tree_size); }
 
     /// \return Memory usage of the complete octree in bytes (may vary between architectures)
     virtual size_t memoryUsage() const;
@@ -496,6 +500,8 @@ namespace octomap {
     inline point3d keyToCoord(const OcTreeKey& key, unsigned depth) const{
       return point3d(float(keyToCoord(key[0], depth)), float(keyToCoord(key[1], depth)), float(keyToCoord(key[2], depth)));
     }
+    
+    void setMinMax(const OcTreeKey& key);
 
  protected:
     /// Constructor to enable derived classes to change tree constants.
@@ -553,6 +559,7 @@ namespace octomap {
 
     point3d tree_center;  // coordinate offset of tree
 
+    bool min_max_changed = false; ///< flag to denote whether the min/max changed (for lazy eval)
     double max_value[3]; ///< max in x, y, z
     double min_value[3]; ///< min in x, y, z
     /// contains the size of a voxel at level i (0: root node). tree_depth+1 levels (incl. 0)

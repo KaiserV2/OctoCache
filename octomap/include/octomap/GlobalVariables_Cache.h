@@ -4,7 +4,6 @@
 
 #include "Cache.h"
 
-
 // variables added especially for the cache realization
 
 namespace octomap{

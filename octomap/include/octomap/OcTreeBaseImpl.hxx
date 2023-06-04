@@ -48,7 +48,10 @@ namespace octomap {
     I(), root(NULL), tree_depth(16), tree_max_val(32768),
     resolution(in_resolution), tree_size(0)
   {
-
+    for (unsigned i = 0; i< 3; i++){
+      max_value[i] = -std::numeric_limits<double>::max();
+      min_value[i] = std::numeric_limits<double>::max();
+    }
     init();
 
     // no longer create an empty root node - only on demand
@@ -432,7 +435,7 @@ namespace octomap {
 
 
   template <class NODE,class I>
-  NODE* OcTreeBaseImpl<NODE,I>::search (const OcTreeKey& key, unsigned int depth) const {
+  NODE* OcTreeBaseImpl<NODE,I>::search(const OcTreeKey& key, unsigned int depth) const {
     assert(depth <= tree_depth);
 
     if (root == NULL){
@@ -900,6 +903,27 @@ namespace octomap {
   }
 
   template <class NODE,class I>
+  void OcTreeBaseImpl<NODE,I>::setMinMax(const OcTreeKey& key) {
+    if (!min_max_changed) { // empty tree
+        min_max_changed = true;
+    }
+    double size = getResolution();
+    double halfSize = size / 2.0;
+    double x = keyToCoord(key[0]) - halfSize;
+    double y = keyToCoord(key[1]) - halfSize;
+    double z = keyToCoord(key[2]) - halfSize;
+    if (x < min_value[0]) min_value[0] = x;
+    if (y < min_value[1]) min_value[1] = y;
+    if (z < min_value[2]) min_value[2] = z;
+    x += size;
+    y += size;
+    z += size;
+    if (x > max_value[0]) max_value[0] = x;
+    if (y > max_value[1]) max_value[1] = y;
+    if (z > max_value[2]) max_value[2] = z;
+  }
+
+  template <class NODE,class I>
   void OcTreeBaseImpl<NODE,I>::calcMinMax() {
     if (!size_changed)
       return;
@@ -943,18 +967,44 @@ namespace octomap {
 
   template <class NODE,class I>
   void OcTreeBaseImpl<NODE,I>::getMetricMin(double& x, double& y, double& z){
+#if USE_NEW_CACHE
+    if (!min_max_changed) {
+      x = 0;
+      y = 0;
+      z = 0;
+    }
+    else {
+      x = min_value[0];
+      y = min_value[1];
+      z = min_value[2];
+    }
+#else
     calcMinMax();
     x = min_value[0];
     y = min_value[1];
     z = min_value[2];
+#endif
   }
 
   template <class NODE,class I>
   void OcTreeBaseImpl<NODE,I>::getMetricMax(double& x, double& y, double& z){
+#if USE_NEW_CACHE
+    if (!min_max_changed) {
+      x = 0;
+      y = 0;
+      z = 0;
+    }
+    else {
+      x = max_value[0];
+      y = max_value[1];
+      z = max_value[2];
+    }
+#else
     calcMinMax();
     x = max_value[0];
     y = max_value[1];
     z = max_value[2];
+#endif
   }
 
   // const versions

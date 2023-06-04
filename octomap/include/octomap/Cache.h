@@ -22,7 +22,7 @@ public:
     // have a buffer
     std::atomic_bool run;
     std::atomic_int bufferSize;
-    ReaderWriterQueue<std::pair<OcTreeKey,double>> buffer;
+    ReaderWriterQueue<std::pair<OcTreeKey,float>> buffer;
     // std::queue<Item> buffer;
     HashMap myHashMap;
     OcTree* tree;
@@ -38,7 +38,7 @@ public:
     Cache(uint32_t _tableSize, uint32_t _tableWidth, OcTree* _tree, uint32_t _clockWait);
     ~Cache();
     
-    void ProcessPkt(const OcTreeKey &key, const bool &value);
+    void updateNode(const OcTreeKey& key, bool occupied, bool lazy_eval = false);
     void Kick();
     // static void DigestBuffer(std::thread* thisThd);
     void EndThread();
@@ -47,9 +47,11 @@ public:
     void PrintBuffer();
     void test();
     void adjust(uint32_t PCSize);
-    double search(const OcTreeKey &key);
-    double search(double x, double y, double z);
+    OcTreeNode* search(const OcTreeKey &key, unsigned int depth = 0);
+    OcTreeNode* search(const point3d& value, unsigned int depth = 0);
+    OcTreeNode* search(double x, double y, double z, unsigned int depth = 0);
     void waitForEmptyBuffer();
+    void flush(); // flush all items in the cache and wait for the buffer to be cleared
     // void test(AbstractOcTree* tree);
 
 };

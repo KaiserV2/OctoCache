@@ -106,13 +106,14 @@ namespace octomap {
 #if USE_NEW_CACHE
     // insert data into tree  -----------------------
     // myCache->adjust();
+    myCache->waitForEmptyBuffer();
     mtx.lock();
     // std::cout << "buffer size " << myCache->bufferSize << std::endl;
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
-      myCache->ProcessPkt(*it, 0);
+      myCache->updateNode(*it, 0);
     }
     for (KeySet::iterator it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
-      myCache->ProcessPkt(*it, 1);
+      myCache->updateNode(*it, 1);
     }
     mtx.unlock();
     myCache->Kick();
@@ -708,16 +709,22 @@ namespace octomap {
       OCTOMAP_WARNING_STR("Coordinates out of bounds during ray casting");
       return false;
     }
-
-    NODE* startingNode = this->search(current_key);
+#if USE_NEW_CACHE
+    auto startingNode = this->myCache->search(current_key);
+#else
+    auto startingNode = this->search(current_key);
+#endif
     if (startingNode){
+      // std::cout << this->isNodeOccupied(startingNode) << std::endl;
       if (this->isNodeOccupied(startingNode)){
+        // std::cout << "Occupied node found at origin" << std::endl;
         // Occupied node found at origin
         // (need to convert from key, since origin does not need to be a voxel center)
         end = this->keyToCoord(current_key);
         return true;
       }
     } else if(!ignoreUnknown){
+      // std::cout << "Unknown node found at origin" << std::endl;
       end = this->keyToCoord(current_key);
       return false;
     }
@@ -749,6 +756,8 @@ namespace octomap {
         tDelta[i] = std::numeric_limits<double>::max();
       }
     }
+    // std::cout << "tMax: " << tMax[0] << ", " << tMax[1] << ", " << tMax[2] << std::endl;
+    // std::cout << "tDelta: " << tDelta[0] << ", " << tDelta[1] << ", " << tDelta[2] << std::endl;
 
     if (step[0] == 0 && step[1] == 0 && step[2] == 0){
     	OCTOMAP_ERROR("Raycasting in direction (0,0,0) is not possible!");
@@ -804,14 +813,21 @@ namespace octomap {
 
       }
 
-      NODE* currentNode = this->search(current_key);
+      // std::cout << "Current key: " << current_key[0] << ", " << current_key[1] << ", " << current_key[2] << std::endl;
+#if USE_NEW_CACHE
+      auto currentNode = this->myCache->search(current_key);
+#else
+      auto currentNode = this->search(current_key);
+#endif
       if (currentNode){
+        // std::cout << "Node found" << std::endl;
         if (this->isNodeOccupied(currentNode)) {
           done = true;
           break;
         }
         // otherwise: node is free and valid, raycasting continues
       } else if (!ignoreUnknown){ // no node found, this usually means we are in "unknown" areas
+        // std::cout << "Unknown node found" << std::endl;
         return false;
       }
     } // end while
