@@ -122,6 +122,7 @@ public:
 
 
 // Hash map class template
+template <class NODE>
 class HashMap {
 public:
 
@@ -133,7 +134,7 @@ public:
         // construct zero initialized hash table of size
         TABLE_SIZE = _TABLE_SIZE;
         // table = new std::vector<HashNode>[TABLE_SIZE];
-        table = new CircularQueue<OcTreeKey, OcTreeNode*>[TABLE_SIZE];
+        table = new CircularQueue<OcTreeKey, NODE*>[TABLE_SIZE];
         for (int i = 0; i < TABLE_SIZE; i++) {
             table[i].init(_bound);
         }
@@ -144,12 +145,9 @@ public:
         bound = _bound;
     }
 
-    ~HashMap() {
-        delete table;
-        delete[] clockCounters;
-    }
+    ~HashMap();
 
-    OcTreeNode* get(const OcTreeKey &key);
+    NODE* get(const OcTreeKey &key);
 
     void KickToBuffer(ReaderWriterQueue<std::pair<OcTreeKey,float>>* q, std::atomic_int& bufferSize);
 
@@ -174,7 +172,7 @@ public:
     // hash table
     // std::vector<HashNode> *table;
 #if USE_CQ
-    CircularQueue<OcTreeKey, OcTreeNode*> *table;
+    CircularQueue<OcTreeKey, NODE*> *table;
 #else
     std::vector<HashNode> *table;
 #endif

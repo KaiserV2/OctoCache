@@ -34,11 +34,23 @@
 #include <octomap/octomap.h>
 #include <octomap/OcTree.h>
 #include "castRay.h"
+#include <chrono>
 
 using namespace std;
 using namespace octomap;
 
 // #define USE_NEW_CACHE false
+
+void print_time(std::string s) {
+    auto currentTime = std::chrono::system_clock::now();
+
+    auto duration = currentTime.time_since_epoch();
+    auto microseconds = std::chrono::duration_cast<std::chrono::microseconds>(duration);
+
+    long long microsecCount = microseconds.count();
+
+    std::cout << s << ":" << microsecCount << std::endl;
+}
 
 void print_query_info(point3d query, OcTreeNode* node) {
   if (node != NULL) {
@@ -53,51 +65,57 @@ int main(int /*argc*/, char** /*argv*/) {
   cout << endl;
   cout << "generating example map" << endl;
 
-  OcTree tree (0.1);  // create empty tree with resolution 0.1
-#if USE_NEW_CACHE
-  tree.myCache = new Cache(1<<10, 12, &tree, 1);
-#endif
+  print_time("start");
 
-  // insert some measurements of occupied cells
+  OcTree* tree = new OcTree(0.1);  // create empty tree with resolution 0.1
+  tree->myCache = new Cache(1<<10, 12, NULL, 1);
+  delete tree;
 
-  for (int x=-20; x<20; x++) {
-    for (int y=-20; y<20; y++) {
-      for (int z=-20; z<20; z++) {
-        point3d endpoint ((float) x*0.05f, (float) y*0.05f, (float) z*0.05f);
-#if USE_NEW_CACHE
-        OcTreeKey key = tree.coordToKey(endpoint);
-        tree.myCache->updateNode(key, true); // integrate 'occupied' measurement
-#else
-        tree.updateNode(endpoint, true); // integrate 'occupied' measurement
-#endif
-      }
-    }
-  }
+// #if USE_NEW_CACHE
+//   tree.myCache = new Cache(1<<10, 12, &tree, 1);
+// #endif
 
-  // insert some measurements of free cells
+//   // insert some measurements of occupied cells
 
-  for (int x=-30; x<30; x++) {
-    for (int y=-30; y<30; y++) {
-      for (int z=-30; z<30; z++) {
-        point3d endpoint ((float) x*0.02f-1.0f, (float) y*0.02f-1.0f, (float) z*0.02f-1.0f);
-#if USE_NEW_CACHE
-        OcTreeKey key = tree.coordToKey(endpoint);
-        tree.myCache->updateNode(key, false);  // integrate 'free' measurement
-#else
-        tree.updateNode(endpoint, false);  // integrate 'free' measurement
-#endif
-      }
-    }
-  }
+//   for (int x=-20; x<20; x++) {
+//     for (int y=-20; y<20; y++) {
+//       for (int z=-20; z<20; z++) {
+//         point3d endpoint ((float) x*0.05f, (float) y*0.05f, (float) z*0.05f);
+// #if USE_NEW_CACHE
+//         OcTreeKey key = tree.coordToKey(endpoint);
+//         tree.myCache->updateNode(key, true); // integrate 'occupied' measurement
+// #else
+//         tree.updateNode(endpoint, true); // integrate 'occupied' measurement
+// #endif
+//       }
+//     }
+//   }
+
+//   // insert some measurements of free cells
+
+//   for (int x=-30; x<30; x++) {
+//     for (int y=-30; y<30; y++) {
+//       for (int z=-30; z<30; z++) {
+//         point3d endpoint ((float) x*0.02f-1.0f, (float) y*0.02f-1.0f, (float) z*0.02f-1.0f);
+// #if USE_NEW_CACHE
+//         OcTreeKey key = tree.coordToKey(endpoint);
+//         tree.myCache->updateNode(key, false);  // integrate 'free' measurement
+// #else
+//         tree.updateNode(endpoint, false);  // integrate 'free' measurement
+// #endif
+//       }
+//     }
+//   }
 
 
-  for (int i = 0; i <= 16; i++) {
-    int count = 0;
-    for (auto it = tree.begin(i); it != tree.end(); ++it) {
-      count++;
-    }
-    cout << i << " " << count << endl;
-  }
+//   for (int i = 0; i <= 16; i++) {
+//     int count = 0;
+//     for (auto it = tree.begin(i); it != tree.end(); ++it) {
+//       count++;
+//     }
+//     cout << i << " " << count << endl;
+//   }
+//   print_time("end");
 //   cout << endl;
 //   cout << "performing some queries:" << endl;
   

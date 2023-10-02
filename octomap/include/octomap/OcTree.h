@@ -64,7 +64,9 @@ namespace octomap {
       printf("The OcTree is responding");
     }
 
-    virtual ~OcTree(){};
+    // virtual ~OcTree(){};
+    
+    ~OcTree();
 
     /// virtual constructor: creates a new object of same type
     /// (Covariant return type requires an up-to-date compiler)

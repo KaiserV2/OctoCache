@@ -2,11 +2,11 @@
 
 
 
-std::mutex mtx;
+// std::mutex mtx;
 std::atomic_bool lock = {false};
 
 uint32_t fetch_from_octree = 0;
-uint32_t insert_to_octree = 0;
+// uint32_t insert_to_octree = 0;
 uint32_t insert_to_hashmap = 0;
 uint32_t insert_to_buffer = 0;
 uint32_t original_nodeupdate = 0;
@@ -150,3 +150,15 @@ uint32_t prime32[MAX_PRIME32] = {
 	9883, 9887, 9901, 9907, 9923, 9929, 9931, 9941, 9949, 9967,
 	9973
 };
+
+
+void print_time(std::string s) {
+    auto currentTime = std::chrono::system_clock::now();
+
+    auto duration = currentTime.time_since_epoch();
+    auto microseconds = std::chrono::duration_cast<std::chrono::microseconds>(duration);
+
+    long long microsecCount = microseconds.count();
+
+    std::cout << s << ":" << microsecCount << std::endl;
+}

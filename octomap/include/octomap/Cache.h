@@ -17,15 +17,16 @@ namespace octomap{
 
 class OcTree; // every function concerned with OcTree only passes OcTree as a pointer
 
+template <class Tree, class NODE>
 class Cache{
 public:
-    // have a buffer
+    std::mutex mtx;
     std::atomic_bool run;
     std::atomic_int bufferSize;
+    uint32_t insert_to_octree;
     ReaderWriterQueue<std::pair<OcTreeKey,float>> buffer;
     // std::queue<Item> buffer;
-    HashMap myHashMap;
-    OcTree* tree;
+    HashMap<NODE> myHashMap;
     std::thread thd;
     uint32_t pktCount;
     uint32_t clockWait = 16;
@@ -35,8 +36,11 @@ public:
     uint32_t bound;
     // function to feed items in the buffer to the octree
 
-    Cache(uint32_t _tableSize, uint32_t _tableWidth, OcTree* _tree, uint32_t _clockWait);
-    ~Cache();
+    Cache(uint32_t _tableSize, uint32_t _tableWidth, Tree* _tree, uint32_t _clockWait);
+    ~Cache() {
+        print_time("end");
+        this->EndThread();
+    }
     
     void updateNode(const OcTreeKey& key, bool occupied, bool lazy_eval = false);
     void Kick();
@@ -47,13 +51,16 @@ public:
     void PrintBuffer();
     void test();
     void adjust(uint32_t PCSize);
-    OcTreeNode* search(const OcTreeKey &key, unsigned int depth = 0);
-    OcTreeNode* search(const point3d& value, unsigned int depth = 0);
-    OcTreeNode* search(double x, double y, double z, unsigned int depth = 0);
+    NODE* search(const OcTreeKey &key, unsigned int depth = 0);
+    NODE* search(const point3d& value, unsigned int depth = 0);
+    NODE* search(double x, double y, double z, unsigned int depth = 0);
     void waitForEmptyBuffer();
     void flush(); // flush all items in the cache and wait for the buffer to be cleared
     // void test(AbstractOcTree* tree);
+    void printInfo();
 
+
+    Tree* tree;
 };
 
 }

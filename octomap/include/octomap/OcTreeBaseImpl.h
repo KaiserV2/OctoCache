@@ -45,10 +45,12 @@
 #include "OcTreeKey.h"
 #include "ScanGraph.h"
 #include "Param.h"
+#include "Cache.h"
 
 
 namespace octomap {
-  
+
+
   // forward declaration for NODE children array
   class AbstractOcTreeNode;
 
@@ -78,6 +80,12 @@ namespace octomap {
   public:
     /// Make the templated NODE type available from the outside
     typedef NODE NodeType;
+
+    // class Cache<NODE>;
+
+#if USE_NEW_CACHE
+    Cache<NODE>* myCache;
+#endif
 
     // the actual iterator implementation is included here
     // as a member from this file

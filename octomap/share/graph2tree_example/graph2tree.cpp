@@ -88,7 +88,7 @@ void SpecifyThread(){
     cpu_set_t cpuset;
     thread = pthread_self();
     CPU_ZERO(&cpuset);
-    CPU_SET(1, &cpuset);
+    CPU_SET(2, &cpuset);
     s = pthread_setaffinity_np(thread, sizeof(cpuset), &cpuset);
 }
 
@@ -126,7 +126,7 @@ void outputStatistics(const OcTree* tree){
 
 int main(int argc, char** argv) {
   // default values:
-  double res = 0.1;
+  double res = 0.5;
   string datasetname = "fr_079";
   string treeFilename = "output";
   uint32_t hashMapSize = 1 << 16;
@@ -144,11 +144,11 @@ int main(int argc, char** argv) {
   unsigned char compression = 1;
 
   // get default sensor model values:
-  OcTree emptyTree(0.1);
-  double clampingMin = emptyTree.getClampingThresMin();
-  double clampingMax = emptyTree.getClampingThresMax();
-  double probMiss = emptyTree.getProbMiss();
-  double probHit = emptyTree.getProbHit();
+  OcTree * tree = new OcTree(res);
+  double clampingMin = tree->getClampingThresMin();
+  double clampingMax = tree->getClampingThresMax();
+  double probMiss = tree->getProbMiss();
+  double probHit = tree->getProbHit();
 
   // SpecifyThread();
   timeval start; 
@@ -178,7 +178,7 @@ int main(int argc, char** argv) {
     }
     else if (!strcmp(argv[arg], "-s")){ // specify the size of the hash table
       ss = std::string(argv[++arg]);
-      hashMapSize *= stoi(ss);
+      hashMapSize *= stof(ss);
     }
     else if (! strcmp(argv[arg], "-k")){
       sk = std::string(argv[++arg]);
@@ -230,7 +230,7 @@ int main(int argc, char** argv) {
       printUsage(argv[0]);
     }
   }
-  string graphFilename = "/home/peiqing/Dataset/Octomap/" + datasetname + ".graph";
+  string graphFilename = "/home/octomap/Dataset/" + datasetname + ".graph";
   if (graphFilename == "" || treeFilename == "") {
     printUsage(argv[0]);
   }
@@ -296,11 +296,14 @@ int main(int argc, char** argv) {
 
   cout << "\nCreating tree\n===========================\n";
 
-  OcTree * tree = new OcTree(res);
   
-#if USE_CACHE | USE_NEW_CACHE
+  
+#if USE_NEW_CACHE
   string filename = "/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/" + datasetname + ".txt";
+  std::cout << "Running with Cache" << std::endl;
   tree->myCache = new Cache(hashMapSize, bound, tree, clockSpeed);
+#else 
+  std::cout << "Running without Cache" << std::endl;
 #endif
 
   tree->setClampingThresMin(clampingMin);
@@ -308,11 +311,11 @@ int main(int argc, char** argv) {
   tree->setProbHit(probHit);
   tree->setProbMiss(probMiss);
 
-#if USE_NEW_CACHE
-  testMinMax(tree->myCache, tree);
-#else 
-  testMinMax(tree);
-#endif
+// #if USE_NEW_CACHE
+//   testMinMax(tree->myCache, tree);
+// #else 
+//   testMinMax(tree);
+// #endif
   
   // uint64_t point1 = __rdtsc();
   size_t numScans = graph->size();
@@ -356,9 +359,6 @@ int main(int argc, char** argv) {
   cout << endl << myCache->bufferSize << endl;
 #endif
 
-#if USE_CACHE | USE_NEW_CACHE
-  tree->myCache->EndThread();
-#endif
 // uint64_t point2 = __rdtsc();
 #if DETAIL_COUNT
   cout << "fetch_from_octree " << fetch_from_octree << endl;
@@ -383,38 +383,12 @@ int main(int argc, char** argv) {
 cout << "octree insertion time " << insert_time << endl;
 cout << "ray tracing time " << raytrace_time << endl;
 
-#if USE_NEW_CACHE
-  testMinMax(tree->myCache, tree);
-#else 
-  testMinMax(tree);
-#endif
+// #if USE_NEW_CACHE
+//   testMinMax(tree->myCache, tree);
+// #else 
+//   testMinMax(tree);
+// #endif
 
-
-  return 0;
-
-  cout << "\nDone building tree.\n\n";
-  cout << "time to insert scans: " << time_to_insert << " sec" << endl;
-  cout << "time to insert 100.000 points took: " << time_to_insert/ ((double) num_points_in_graph / 100000) << " sec (avg)" << endl << endl;
-
-
-  std::cout << "Pruned tree (lossless compression)\n" << "===========================\n";
-  outputStatistics(tree);
-
-  tree->write(treeFilenameOT);
-
-  std::cout << "Pruned max-likelihood tree (lossy compression)\n" << "===========================\n";
-  tree->toMaxLikelihood();
-  tree->prune();
-  outputStatistics(tree);
-
-
-  cout << "\nWriting tree files\n===========================\n";
-  tree->write(treeFilenameMLOT);
-  std::cout << "Full Octree (pruned) written to "<< treeFilenameOT << std::endl;
-  std::cout << "Full Octree (max.likelihood, pruned) written to "<< treeFilenameMLOT << std::endl;
-  tree->writeBinary(treeFilename);
-  std::cout << "Bonsai tree written to "<< treeFilename << std::endl;
-  cout << endl;
 
   delete tree;
 

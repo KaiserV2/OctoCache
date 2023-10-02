@@ -46,6 +46,13 @@ namespace octomap {
     readBinary(_filename);
   }
 
+  OcTree::~OcTree() {
+    // stop the cache thread
+#if USE_NEW_CACHE
+    delete myCache;
+#endif
+  }
+
   OcTree::StaticMemberInitializer OcTree::ocTreeMemberInit;
 
 

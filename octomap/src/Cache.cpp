@@ -31,9 +31,12 @@ namespace octomap{
     }
 #endif
 
-    Cache::Cache(uint32_t _tableSize, uint32_t _tableWidth, OcTree* _tree, uint32_t _clockWait) {
+template <class Tree, class NODE>
+    Cache<Tree, NODE>::Cache(uint32_t _tableSize, uint32_t _tableWidth, Tree* _tree, uint32_t _clockWait) {
+        std::cout << "Initializing cache" << std::endl;
         myHashMap.init(_tableSize, _tableWidth, _tree);
         bufferSize = 0;
+        insert_to_octree = 0;
         tree = _tree;
         pktCount = 0; // here pkt count means the number of "duplicated insertions"
         clockWait = _clockWait; // make it 2^n, the default is 90k / 7k
@@ -43,9 +46,13 @@ namespace octomap{
         this->StartThread();
     }
 
-    Cache::~Cache(){}
+    // Cache::~Cache(){
+    //     print_time("end");
+    //     this->EndThread();
+    // }
 
-    void Cache::updateNode(const OcTreeKey& key, bool occupied, bool lazy_eval){
+template <class Tree, class NODE>
+    void Cache<Tree, NODE>::updateNode(const OcTreeKey& key, bool occupied, bool lazy_eval){
 #if CPU_CYCLES
         uint64_t point1, point2, point3, point4;
 #endif
@@ -65,15 +72,16 @@ namespace octomap{
         }
     }
 
-    void Cache::Kick() {
+template <class Tree, class NODE>
+    void Cache<Tree, NODE>::Kick() {
         myHashMap.KickToBuffer(&buffer, bufferSize);
         return;
     }
 
-
-    void DigestBuffer(std::thread* thisThd, Cache* myCache) {
+template <class Tree, class NODE>
+    void DigestBuffer(std::thread* thisThd, Cache<Tree, NODE>* myCache) {
 // #ifdef __linux__
-//         if(!setaffinity(thisThd, 0))
+//         if(!setaffinity(thisThd, 5))
 //             return;
 // #endif
         while (true) {
@@ -81,7 +89,7 @@ namespace octomap{
                 break;
             }
             if (myCache->bufferSize){
-                mtx.lock();
+                myCache->mtx.lock();
                 // std::cout << "unlock" << std::endl;
                 while(myCache->bufferSize){
                     std::pair<OcTreeKey,double> pair;
@@ -90,15 +98,16 @@ namespace octomap{
                         myCache->tree->setNodeValue(pair.first, pair.second, lazy_eval);
                         myCache->bufferSize--;
                         // mtx.unlock();
-                        insert_to_octree++;
+                        myCache->insert_to_octree++;
                     }
                 }
-                mtx.unlock();
+                myCache->mtx.unlock();
             }
         }
     }
 
-    void OneDigestBuffer(Cache* myCache) {
+template <class Tree, class NODE>
+    void OneDigestBuffer(Cache<Tree, NODE>* myCache) {
         while((myCache->run) || (myCache->bufferSize != 0)) {
             std::pair<OcTreeKey,double> pair;
             while (myCache->buffer.try_dequeue(pair)) { 
@@ -127,7 +136,8 @@ namespace octomap{
         }
     }
 
-    void Cache::StartThread() {
+template <class Tree, class NODE>
+    void Cache<Tree, NODE>::StartThread() {
         this->run = true;
 #if DEBUG1
         std::cout << "Starting the thread" << std::endl;
@@ -135,17 +145,23 @@ namespace octomap{
         thd = std::thread(DigestBuffer, &thd, this);
     }
 
-    void Cache::EndThread() {
+template <class Tree, class NODE>
+    void Cache<Tree, NODE>::EndThread() {
+        if (this->run == false) {
+            return;
+        }
         std::cout << "We turn off the thread" << std::endl;
         // this->myHashMap.cleanHashMap(&buffer, bufferSize);
         this->run = false; 
         thd.join();
         std::cout << "Remaining buffersize " << bufferSize << std::endl;
+        std::cout << "Total insertion to Octree " << insert_to_octree << std::endl;
         // Item item;
         // std::cout << "Buffer check: " <<  this->buffer.try_dequeue(item) << std::endl;
     }
 
-    void Cache::EndOneThread() { // test for single thread
+template <class Tree, class NODE>
+    void Cache<Tree, NODE>::EndOneThread() { // test for single thread
         timeval start; 
         timeval stop; 
         gettimeofday(&start, NULL);  // stop timer
@@ -165,7 +181,8 @@ namespace octomap{
         // std::cout << "Buffer check: " <<  this->buffer.try_dequeue(item) << std::endl;
     }
 
-    void Cache::PrintBuffer() {
+template <class Tree, class NODE>
+    void Cache<Tree, NODE>::PrintBuffer() {
 #if DEBUG1
         std::cout << "Printing buffer" << std::endl;
 #endif
@@ -177,22 +194,19 @@ namespace octomap{
         // }
     }
 
-    void Cache::test(){
+template <class Tree, class NODE>
+    void Cache<Tree, NODE>::test(){
         tree->test();
     }
 
-    OcTreeNode* Cache::search(const OcTreeKey &key, unsigned int depth) {
-        OcTreeNode* node = myHashMap.get(key);
-        if (node != NULL) {
-            // std::cout << "found in cache" << std::endl;
-            return node;
-        }
-        // std::cout << "search in tree" << std::endl;
-        node = tree->search(key);
+template <class Tree, class NODE>
+    NODE* Cache<Tree, NODE>::search(const OcTreeKey &key, unsigned int depth) {
+        NODE* node = myHashMap.get(key);
         return node;
     }
 
-    OcTreeNode* Cache::search(const point3d& value, unsigned int depth) { // remember to delete the node after return
+template <class Tree, class NODE>
+    NODE* Cache<Tree, NODE>::search(const point3d& value, unsigned int depth) { // remember to delete the node after return
         OcTreeKey key;
         if (!tree->coordToKeyChecked(value, key)){
             OCTOMAP_ERROR_STR("Error in search: ["<< value <<"] is out of OcTree bounds!");
@@ -203,7 +217,8 @@ namespace octomap{
         }
     }
 
-    OcTreeNode* Cache::search(double x, double y, double z, unsigned int depth) {
+template <class Tree, class NODE>
+    NODE* Cache<Tree, NODE>::search(double x, double y, double z, unsigned int depth) {
         // first convert into OcTreeKey
         OcTreeKey key;
         if (!tree->coordToKeyChecked(x, y, z, key)){ // if the coordinates does not correspond to a valid key
@@ -215,11 +230,19 @@ namespace octomap{
         }
     }
 
-    void Cache::waitForEmptyBuffer() {
+template <class Tree, class NODE>
+    void Cache<Tree, NODE>::waitForEmptyBuffer() {
         while(bufferSize) {}
     }
 
-    void Cache::flush() {
+template <class Tree, class NODE>
+    void Cache<Tree, NODE>::flush() {
         
+    }
+
+template <class Tree, class NODE>
+    void Cache<Tree, NODE>::printInfo() {
+        printf("fetch from octree: %d\n", fetch_from_octree);
+        fetch_from_octree = 0;
     }
 }

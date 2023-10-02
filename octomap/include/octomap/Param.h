@@ -4,9 +4,12 @@
 #include <stdint.h>
 #include <mutex>
 #include <atomic>
+#include <chrono>
+#include <iostream>
 
 #define USE_CACHE false
-#define USE_NEW_CACHE false
+#define USE_NEW_CACHE true
+#define DEBUG_API true
 #define ONE_THREAD false // the 1 threaded version of cache
 #define DETAIL_LOG false
 #define DEBUG1 false
@@ -17,12 +20,12 @@
 const int DEFAULT_TABLE_SIZE = 20;
 #define SEED 19991228
 
-extern std::mutex mtx;
+// extern std::mutex mtx;
 extern std::atomic_bool lock;
 
 
 extern uint32_t fetch_from_octree;
-extern uint32_t insert_to_octree;
+// extern uint32_t insert_to_octree;
 extern uint32_t insert_to_hashmap;
 extern uint32_t insert_to_buffer;
 extern uint32_t original_nodeupdate;
@@ -54,5 +57,7 @@ extern uint32_t prime32[MAX_PRIME32];
   c -= a; c -= b; c ^= (b>>15); \
 }
 
+
+void print_time(std::string s);
 
 #endif

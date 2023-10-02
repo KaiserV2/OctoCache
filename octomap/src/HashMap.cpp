@@ -8,7 +8,8 @@
 
 namespace octomap{
 
-OcTreeNode* HashMap::get(const OcTreeKey &key) {
+template <class NODE>
+NODE* HashMap<NODE>::get(const OcTreeKey &key) {
     // this function waits to be finished
     // search each bucket after another, stops if found 10 consecutive full buckets
     unsigned long hashValue = MortonHash(key);
@@ -28,7 +29,8 @@ OcTreeNode* HashMap::get(const OcTreeKey &key) {
     return NULL;
 }
 
-void HashMap::KickToBuffer(ReaderWriterQueue<std::pair<OcTreeKey,float>>* q, std::atomic_int& bufferSize){
+template <class NODE>
+void HashMap<NODE>::KickToBuffer(ReaderWriterQueue<std::pair<OcTreeKey,float>>* q, std::atomic_int& bufferSize){
 // sequentially clean all the inactive buckets in the table
     for (int i = 0; i < TABLE_SIZE; i++) {
         // >>1 for all clock items
@@ -52,13 +54,14 @@ void HashMap::KickToBuffer(ReaderWriterQueue<std::pair<OcTreeKey,float>>* q, std
     }
 }
 
-
-void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue, ReaderWriterQueue<std::pair<OcTreeKey,float>>* q, std::atomic_int& bufferSize) {
+template <class NODE>
+void HashMap<NODE>::put(const OcTreeKey &key, const bool &value, const uint32_t& hashValue, ReaderWriterQueue<std::pair<OcTreeKey,float>>* q, std::atomic_int& bufferSize) {
 #if DETAIL_COUNT
     insert_to_hashmap++;
 #endif
 #if USE_CQ
     tree->setMinMax(key);
+    // std::cout << TABLE_SIZE << " " << hashValue << std::endl;
     clockCounters[hashValue] = clockCounters[hashValue] | 128;
     int i = table[hashValue].find(key);
     if (i != -1) { 
@@ -100,7 +103,7 @@ void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashV
     // this node does not exist
     double accumulateOccupancy = 0.0;
     auto node = tree->search(key);
-    // fetch_from_octree++;
+    fetch_from_octree++;
     if (node != NULL) {
         accumulateOccupancy = node->getLogOdds();
     }
@@ -125,15 +128,14 @@ void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashV
         bufferSize++;
         table[hashValue].pop();
     }
-    OcTreeNode* newNode = new OcTreeNode();
+    NODE* newNode = new NODE();
     newNode->setLogOdds(accumulateOccupancy);
     table[hashValue].push(key, newNode);
     // table[hashValue].push(key, accumulateOccupancy);
 }
 
-
-
-uint32_t HashMap::ScalarHash(const OcTreeKey &key){
+template <class NODE>
+uint32_t HashMap<NODE>::ScalarHash(const OcTreeKey &key){
     uint32_t keys[2] = {0, 0};
     memcpy((uint16_t*)keys, &key.k[0], 6);
     uint32_t hashValue = murmur3<2>::scalar((uint32_t *)(&(keys[0])), 1) % TABLE_SIZE;
@@ -141,9 +143,8 @@ uint32_t HashMap::ScalarHash(const OcTreeKey &key){
     return hashValue;
 }
 
-
-
-uint32_t HashMap::MortonHash(const OcTreeKey &key){
+template <class NODE>
+uint32_t HashMap<NODE>::MortonHash(const OcTreeKey &key){
     uint64_t sum = 0;
     std::bitset<16> k0(key.k[0]);
     std::bitset<16> k1(key.k[1]);
@@ -157,12 +158,19 @@ uint32_t HashMap::MortonHash(const OcTreeKey &key){
     return hashValue;
 }
 
-uint32_t HashMap::RoundRobin(uint32_t count){
+template <class NODE>
+uint32_t HashMap<NODE>::RoundRobin(uint32_t count){
     return (count % TABLE_SIZE);
 }
 
+template <class NODE>
+HashMap<NODE>::~HashMap() {
+    delete[] table;
+    delete[] clockCounters;
+}
 
-void HashMap::cleanHashMap(ReaderWriterQueue<std::pair<OcTreeKey,float>>* q, std::atomic_int& bufferSize) {
+template <class NODE>
+void HashMap<NODE>::cleanHashMap(ReaderWriterQueue<std::pair<OcTreeKey,float>>* q, std::atomic_int& bufferSize) {
     currentPointCloud++;
     printf("Cleaning the HashMap\n");
     for (uint32_t i = 0; i < TABLE_SIZE; i++) {
@@ -170,7 +178,8 @@ void HashMap::cleanHashMap(ReaderWriterQueue<std::pair<OcTreeKey,float>>* q, std
     }
 }
 
-int HashMap::loadSize(){
+template <class NODE>
+int HashMap<NODE>::loadSize(){
     int sum = 0;
     for (int i = 0; i < TABLE_SIZE; i++) {
         sum += table[i].count();

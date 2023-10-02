@@ -24,9 +24,9 @@ class CircularQueue {
     }
     ~CircularQueue() {
       delete[] _keys;
-      for (int i = 0; i < _maxitems; i++) {
-        delete _values[i];
-      }
+      // for (int i = 0; i < _maxitems; i++) {
+      //   delete _values[i];
+      // }
       delete[] _values;
     }
     inline int count();

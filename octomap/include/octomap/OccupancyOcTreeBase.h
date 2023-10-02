@@ -70,9 +70,7 @@ namespace octomap {
   class OccupancyOcTreeBase : public OcTreeBaseImpl<NODE,AbstractOccupancyOcTree> {
 
   public:
-#if USE_NEW_CACHE
-    Cache* myCache;
-#endif
+
     /// Default constructor, sets resolution of leafs
     OccupancyOcTreeBase(double resolution);
     virtual ~OccupancyOcTreeBase();
@@ -97,7 +95,7 @@ namespace octomap {
     * @param discretize whether the scan is discretized first into octree key cells (default: false).
     *   This reduces the number of raycasts using computeDiscreteUpdate(), resulting in a potential speedup.*
     */
-    virtual void insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin, Cache* myCache,
+    virtual void insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin, Cache<NODE>* myCache,
                    double maxrange=-1., bool lazy_eval = false, bool discretize = false);
 
     // the original function

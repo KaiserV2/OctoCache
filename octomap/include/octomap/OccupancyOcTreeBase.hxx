@@ -93,7 +93,7 @@ namespace octomap {
 
 
   template <class NODE>
-  void OccupancyOcTreeBase<NODE>::insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin, Cache* myCache,
+  void OccupancyOcTreeBase<NODE>::insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin, Cache<NODE>* myCache,
                                              double maxrange, bool lazy_eval, bool discretize) {
 
     KeySet free_cells, occupied_cells;
@@ -107,16 +107,20 @@ namespace octomap {
     // insert data into tree  -----------------------
     // myCache->adjust();
     myCache->waitForEmptyBuffer();
-    mtx.lock();
+    myCache->mtx.lock();
+    print_time("octree insertion begins");
     // std::cout << "buffer size " << myCache->bufferSize << std::endl;
+    std::cout << "Profiling: updateNode for a whole point cloud with " << free_cells.size() + occupied_cells.size() << " points" << std::endl;
     for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
-      myCache->updateNode(*it, 0);
+      updateNode(*it, false, lazy_eval);
     }
     for (KeySet::iterator it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
-      myCache->updateNode(*it, 1);
+      updateNode(*it, true, lazy_eval);
     }
-    mtx.unlock();
-    myCache->Kick();
+    myCache->mtx.unlock();
+    // myCache->Kick();
+    print_time("octree insertion ends");
+    myCache->printInfo();
 #endif
     pointCloudCount++;
     myCache->myHashMap.currentPointCloud++;
@@ -402,6 +406,9 @@ namespace octomap {
 
   template <class NODE>
   NODE* OccupancyOcTreeBase<NODE>::updateNode(const OcTreeKey& key, bool occupied, bool lazy_eval) {
+#if USE_NEW_CACHE
+    this->myCache->updateNode(key, occupied);
+#endif
     float logOdds = this->prob_miss_log;
     if (occupied)
       logOdds = this->prob_hit_log;
@@ -709,11 +716,7 @@ namespace octomap {
       OCTOMAP_WARNING_STR("Coordinates out of bounds during ray casting");
       return false;
     }
-#if USE_NEW_CACHE
-    auto startingNode = this->myCache->search(current_key);
-#else
     auto startingNode = this->search(current_key);
-#endif
     if (startingNode){
       // std::cout << this->isNodeOccupied(startingNode) << std::endl;
       if (this->isNodeOccupied(startingNode)){
