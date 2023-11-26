@@ -438,12 +438,6 @@ namespace octomap {
   NODE* OcTreeBaseImpl<NODE,I>::search(const OcTreeKey& key, unsigned int depth) const {
     assert(depth <= tree_depth);
 
-#if USE_NEW_CACHE
-    NODE* node = myCache->search(key, depth);
-    if (node != NULL)
-      return node;
-#endif
-
     if (root == NULL){
       return NULL;
     }

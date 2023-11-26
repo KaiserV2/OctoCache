@@ -7,8 +7,6 @@ class CircularQueue {
     int _front, _back, _count;
     K *_keys;
     V *_values;
-    // K _keys[6];
-    // V _values[6];
     int _maxitems;
   public:
     CircularQueue(int maxitems = 256) { 
@@ -21,18 +19,13 @@ class CircularQueue {
       _back = 0;
       _count = 0;
       _maxitems = maxitems;
-      _keys = new K[_maxitems + 1];
-      _values = new V[_maxitems + 1];
-      for (int i = 0; i < _maxitems; i++) {
-        _values[i] = nullptr;
-      }
+      _keys = new K[_maxitems];
+      _values = new V[_maxitems];
     }
     ~CircularQueue() {
       delete[] _keys;
       for (int i = 0; i < _maxitems; i++) {
-        if (_values[i]) {
-          delete _values[i];
-        }
+        delete _values[i];
       }
       delete[] _values;
     }
@@ -115,7 +108,6 @@ void CircularQueue<K, V>::pop() { // pop the last element
   }
   else {
     delete _values[_back];
-    _values[_back] = nullptr;
     _back--;
     if (_back < 0) {
       _back = _maxitems;

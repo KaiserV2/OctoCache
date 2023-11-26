@@ -82,10 +82,9 @@ namespace octomap {
     typedef NODE NodeType;
 
     // class Cache<NODE>;
-
-#if USE_NEW_CACHE
-    Cache<NODE>* myCache;
-#endif
+  #if USE_NEW_CACHE
+    Cache* myCache;
+  #endif
 
     // the actual iterator implementation is included here
     // as a member from this file

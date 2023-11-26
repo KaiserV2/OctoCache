@@ -95,7 +95,7 @@ namespace octomap {
     * @param discretize whether the scan is discretized first into octree key cells (default: false).
     *   This reduces the number of raycasts using computeDiscreteUpdate(), resulting in a potential speedup.*
     */
-    virtual void insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin, Cache<NODE>* myCache,
+    virtual void insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin, Cache* myCache,
                    double maxrange=-1., bool lazy_eval = false, bool discretize = false);
 
     // the original function
@@ -390,11 +390,17 @@ namespace octomap {
     void duplicationCheck(KeySet& free_cells, KeySet& occupied_cells);
 
     // the original function
+#if VECTOR_OCTOMAP
+    void computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
+                       std::vector<OcTreeKey>& free_cells,
+                       std::vector<OcTreeKey>& occupied_cells,
+                       double maxrange);
+#else
     void computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
                        KeySet& free_cells,
                        KeySet& occupied_cells,
                        double maxrange);
-
+#endif
 
     /**
      * Helper for insertPointCloud(). Computes all octree nodes affected by the point cloud
@@ -408,11 +414,15 @@ namespace octomap {
      * @param occupied_cells keys of nodes to be marked occupied
      * @param maxrange maximum range for raycasting (-1: unlimited)
      */
+#if VECTOR_OCTOMAP
     void computeDiscreteUpdate(const Pointcloud& scan, const octomap::point3d& origin,
-                       KeySet& free_cells,
-                       KeySet& occupied_cells,
-                       double maxrange);
-
+                        std::vector<OcTreeKey>& free_cells, std::vector<OcTreeKey>& occupied_cells,
+                        double maxrange);
+#else
+    void computeDiscreteUpdate(const Pointcloud& scan, const octomap::point3d& origin,
+                        KeySet& free_cells, KeySet& occupied_cells,
+                        double maxrange);
+#endif
 
     // -- I/O  -----------------------------------------
 

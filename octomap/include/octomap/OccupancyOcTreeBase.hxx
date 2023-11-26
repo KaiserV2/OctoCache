@@ -37,6 +37,9 @@
 #include <stdlib.h>
 #include <omp.h>
 #include <fstream>
+#include <chrono>
+#include <algorithm>
+
 #ifdef __x86_64__
 #include <x86intrin.h> // for rdtsc on x86
 #elif __aarch64__
@@ -93,37 +96,94 @@ namespace octomap {
 
 
   template <class NODE>
-  void OccupancyOcTreeBase<NODE>::insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin, Cache<NODE>* myCache,
+  void OccupancyOcTreeBase<NODE>::insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin, Cache* myCache,
                                              double maxrange, bool lazy_eval, bool discretize) {
 
+#if VECTOR_OCTOMAP
+    std::vector<OcTreeKey> free_cells, occupied_cells;
+#else
     KeySet free_cells, occupied_cells;
+#endif
+    long long point1 = print_time("ray tracing begins");
     if (discretize)
       computeDiscreteUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
     else
       computeUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
-
+    long long point2 = print_time("ray tracing ends");
+    raytrace_time += (point2 - point1);
 
 #if USE_NEW_CACHE
     // insert data into tree  -----------------------
     // myCache->adjust();
+    // duplicationCheck(free_cells, occupied_cells);
+    // myCache->printInfo();
     myCache->waitForEmptyBuffer();
     myCache->mtx.lock();
-    print_time("octree insertion begins");
+    long long point3 = print_time("octree insertion begins");
     // std::cout << "buffer size " << myCache->bufferSize << std::endl;
-    std::cout << "Profiling: updateNode for a whole point cloud with " << free_cells.size() + occupied_cells.size() << " points" << std::endl;
-    for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
-      updateNode(*it, false, lazy_eval);
+    // std::cout << "Profiling: updateNode for a whole point cloud with " << free_cells.size() + occupied_cells.size() << " points" << std::endl;
+    // KeySet free_cells_copy;
+    // KeySet occupied_cells_copy;
+    // free_cells_copy.insert(free_cells.begin(), free_cells.end());
+    // occupied_cells_copy.insert(occupied_cells.begin(), occupied_cells.end());
+    // std::cout << "Non duplicated: " << free_cells_copy.size() << " " << occupied_cells_copy.size() << std::endl;
+    original_nodeupdate += free_cells.size();
+    original_nodeupdate += occupied_cells.size();
+    // sort the free cells and occupied cells
+    // std::sort(free_cells.begin(), free_cells.end());
+    // std::sort(occupied_cells.begin(), occupied_cells.end());
+    for (auto it = free_cells.begin(); it != free_cells.end(); ++it) {
+      myCache->updateNode(*it, false, lazy_eval);
     }
-    for (KeySet::iterator it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
-      updateNode(*it, true, lazy_eval);
+    for (auto it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
+      myCache->updateNode(*it, true, lazy_eval);
     }
+    
+    threadOn = true;
+    long long point4 = print_time("octree insertion ends");
+    myCache->Kick();
     myCache->mtx.unlock();
-    // myCache->Kick();
-    print_time("octree insertion ends");
-    myCache->printInfo();
+    insert_time += (point4 - point3);
+    kick_time += print_time("kick starts") - point4;
+    
+    // myCache->printInfo();
 #endif
     pointCloudCount++;
     myCache->myHashMap.currentPointCloud++;
+
+    
+// profiling code for grid set overlap
+    // if (PCcount < 3) { // first point cloud
+    //   key_sets[PCcount].insert(free_cells.begin(), free_cells.end());
+    //   key_sets[PCcount].insert(occupied_cells.begin(), occupied_cells.end());
+    // }
+    // else {
+    //   int overlapCount = 0;
+    //   for (auto it = free_cells.begin(); it != free_cells.end(); ++it) {
+    //     if (key_sets[0].find(*it) != key_sets[0].end() || key_sets[1].find(*it) != key_sets[1].end() || key_sets[2].find(*it) != key_sets[2].end()){
+    //       overlapCount++;
+    //     }
+    //   }
+    //   for (auto it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
+    //     if (key_sets[0].find(*it) != key_sets[0].end() || key_sets[1].find(*it) != key_sets[1].end() || key_sets[2].find(*it) != key_sets[2].end()){
+    //       overlapCount++;
+    //     }
+    //   }
+    //   double overlapPortion = (double)overlapCount / (double)(free_cells.size() + occupied_cells.size());
+    //   std::cout << "Profiling: overlap portion is " << overlapPortion << std::endl;
+
+    //   key_sets[0].clear();
+    //   // move key_sets[1] to key_sets[0]
+    //   key_sets[0].insert(key_sets[1].begin(), key_sets[1].end());
+    //   key_sets[1].clear();
+    //   // move key_sets[2] to key_sets[1]
+    //   key_sets[1].insert(key_sets[2].begin(), key_sets[2].end());
+    //   key_sets[2].clear();
+    //   // insert new key set to key_sets[2]
+    //   key_sets[2].insert(free_cells.begin(), free_cells.end());
+    //   key_sets[2].insert(occupied_cells.begin(), occupied_cells.end());
+    // }
+    // PCcount++;
   }
 
 
@@ -133,31 +193,48 @@ namespace octomap {
                                              double maxrange, bool lazy_eval, bool discretize) {
 
     
-    // uint64_t point1, point2, point3, point4;
-    // point3 = __rdtsc();
+
+#if VECTOR_OCTOMAP
+    std::vector<OcTreeKey> free_cells, occupied_cells;
+#else
     KeySet free_cells, occupied_cells;
+#endif
+
+    long long point1 = print_time("ray tracing begins");
     if (discretize)
       computeDiscreteUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
     else
       computeUpdate(scan, sensor_origin, free_cells, occupied_cells, maxrange);
     // insert data into tree  -----------------------
-    // point4 = __rdtsc();
-    // raytrace_time +=  point4 - point3;
-    // point1 = __rdtsc();
-    for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
+
+    long long point2 = print_time("ray tracing ends");
+    raytrace_time += (point2 - point1);
+#if VECTOR_OCTOMAP==false
+    duplicationCheck(free_cells, occupied_cells);
+#endif
+    
+    // duplicate_time += (point3 - point2);
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    // std::shuffle(free_cells.begin(), free_cells.end(), std::default_random_engine(seed));
+    // std::shuffle(occupied_cells.begin(), occupied_cells.end(), std::default_random_engine(seed));
+    long long point3 = print_time("duplication check ends");
+    std::cout << "Profiling: updateNode with " << free_cells.size() + occupied_cells.size() << " nodes" << std::endl;
+    for (auto it = free_cells.begin(); it != free_cells.end(); ++it) {
       // fout << it->k[0] << " " << it->k[1] << " " << it->k[2] << " " << 0 << std::endl;
       updateNode(*it, false, lazy_eval);
     }
-    for (KeySet::iterator it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
+    for (auto it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
       // fout << it->k[0] << " " << it->k[1] << " " << it->k[2] << " " << 1 << std::endl;
       updateNode(*it, true, lazy_eval);
     }
-    // point2 = __rdtsc();
-    // insert_time +=  point2 - point1;
-    // fout << "next" << std::endl;
+
+    long long point4 = print_time("octree insertion ends");
+
+    insert_time +=  (point4 - point3);
 
     original_nodeupdate += free_cells.size();
     original_nodeupdate += occupied_cells.size();
+
   }
 
   template <class NODE>
@@ -204,9 +281,15 @@ namespace octomap {
   }
 
   template <class NODE>
+#if VECTOR_OCTOMAP
+  void OccupancyOcTreeBase<NODE>::computeDiscreteUpdate(const Pointcloud& scan, const octomap::point3d& origin,
+                                                std::vector<OcTreeKey>& free_cells, std::vector<OcTreeKey>& occupied_cells,
+                                                double maxrange)
+#else
   void OccupancyOcTreeBase<NODE>::computeDiscreteUpdate(const Pointcloud& scan, const octomap::point3d& origin,
                                                 KeySet& free_cells, KeySet& occupied_cells,
                                                 double maxrange)
+#endif
  {
    Pointcloud discretePC;
    discretePC.reserve(scan.size());
@@ -226,9 +309,9 @@ namespace octomap {
 
   template <class NODE>
   void OccupancyOcTreeBase<NODE>::duplicationCheck(KeySet& free_cells, KeySet& occupied_cells){
-    for(KeySet::iterator it = free_cells.begin(), end=free_cells.end(); it!= end; ){
-      if (occupied_cells.find(*it) != occupied_cells.end()){
-        it = free_cells.erase(it);
+    for(KeySet::iterator it = occupied_cells.begin(), end=occupied_cells.end(); it!= end; ){
+      if (free_cells.find(*it) != free_cells.end()){
+        free_cells.erase(*it);
       } else {
         ++it;
       }
@@ -237,9 +320,15 @@ namespace octomap {
 
   // the original function
   template <class NODE>
+#if VECTOR_OCTOMAP
+  void OccupancyOcTreeBase<NODE>::computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
+                                                std::vector<OcTreeKey>& free_cells, std::vector<OcTreeKey>& occupied_cells,
+                                                double maxrange)
+#else
   void OccupancyOcTreeBase<NODE>::computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
                                                 KeySet& free_cells, KeySet& occupied_cells,
                                                 double maxrange)
+#endif
   {
   // std::cout << use_bbx_limit << std::endl;
 
@@ -264,7 +353,11 @@ namespace octomap {
             #pragma omp critical (free_insert)
 #endif
             {
+#if VECTOR_OCTOMAP
+              free_cells.insert(free_cells.end(), keyray->begin(), keyray->end());
+#else
               free_cells.insert(keyray->begin(), keyray->end());
+#endif
             }
           }
           // occupied endpoint
@@ -274,7 +367,11 @@ namespace octomap {
             #pragma omp critical (occupied_insert)
 #endif
             {
+#if VECTOR_OCTOMAP
+              occupied_cells.push_back(key);
+#else
               occupied_cells.insert(key);
+#endif
             }
           }
         } else { // user set a maxrange and length is above
@@ -285,7 +382,11 @@ namespace octomap {
             #pragma omp critical (free_insert)
 #endif
             {
+#if VECTOR_OCTOMAP
+              free_cells.insert(free_cells.end(), keyray->begin(), keyray->end());
+#else
               free_cells.insert(keyray->begin(), keyray->end());
+#endif
             }
           }
         } // end if maxrange
@@ -300,7 +401,11 @@ namespace octomap {
             #pragma omp critical (occupied_insert)
 #endif
             {
+#if VECTOR_OCTOMAP
+              occupied_cells.push_back(key);
+#else
               occupied_cells.insert(key);
+#endif
             }
           }
 
@@ -312,7 +417,11 @@ namespace octomap {
                 #pragma omp critical (free_insert)
 #endif
                 {
+#if VECTOR_OCTOMAP
+                  free_cells.push_back(*rit);
+#else
                   free_cells.insert(*rit);
+#endif
                 }
               }
               else break;
@@ -324,7 +433,6 @@ namespace octomap {
     } // end for all points, end of parallel OMP loop
 
     // prefer occupied cells over free ones (and make sets disjunct)
-    duplicationCheck(free_cells, occupied_cells);
   }
 
 
@@ -406,9 +514,6 @@ namespace octomap {
 
   template <class NODE>
   NODE* OccupancyOcTreeBase<NODE>::updateNode(const OcTreeKey& key, bool occupied, bool lazy_eval) {
-#if USE_NEW_CACHE
-    this->myCache->updateNode(key, occupied);
-#endif
     float logOdds = this->prob_miss_log;
     if (occupied)
       logOdds = this->prob_hit_log;
@@ -716,7 +821,11 @@ namespace octomap {
       OCTOMAP_WARNING_STR("Coordinates out of bounds during ray casting");
       return false;
     }
+#if USE_NEW_CACHE
+    auto startingNode = this->myCache->search(current_key);
+#else
     auto startingNode = this->search(current_key);
+#endif
     if (startingNode){
       // std::cout << this->isNodeOccupied(startingNode) << std::endl;
       if (this->isNodeOccupied(startingNode)){
@@ -815,13 +924,12 @@ namespace octomap {
           return false;
 
       }
-
-      // std::cout << "Current key: " << current_key[0] << ", " << current_key[1] << ", " << current_key[2] << std::endl;
 #if USE_NEW_CACHE
       auto currentNode = this->myCache->search(current_key);
 #else
       auto currentNode = this->search(current_key);
 #endif
+      // std::cout << "Current key: " << current_key[0] << ", " << current_key[1] << ", " << current_key[2] << std::endl;
       if (currentNode){
         // std::cout << "Node found" << std::endl;
         if (this->isNodeOccupied(currentNode)) {

@@ -146,13 +146,17 @@ int main(int argc, char** argv) {
       scan.transform(frame_origin);
       point3d origin = frame_origin.transform(sensor_origin);
 
+#if VECTOR_OCTOMAP
+      std::vector<OcTreeKey> free_cells, occupied_cells;
+#else
       KeySet free_cells, occupied_cells;
+#endif
       tree->computeUpdate(scan, origin, free_cells, occupied_cells, maxrange);
 
       num_points += scan.size();
 
       // count free cells
-      for (KeySet::iterator it = free_cells.begin(); it != free_cells.end(); ++it) {
+      for (auto it = free_cells.begin(); it != free_cells.end(); ++it) {
         OcTreeNode* n = tree->search(*it);
         if (n){
           if (tree->isNodeOccupied(n))
@@ -162,7 +166,7 @@ int main(int argc, char** argv) {
         } else
           num_voxels_unknown++;
       } // count occupied cells
-      for (KeySet::iterator it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
+      for (auto it = occupied_cells.begin(); it != occupied_cells.end(); ++it) {
         OcTreeNode* n = tree->search(*it);
         if (n){
           if (tree->isNodeOccupied(n))

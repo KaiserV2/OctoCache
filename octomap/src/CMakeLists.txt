@@ -3,11 +3,11 @@ SET (octomap_SRCS
   AbstractOccupancyOcTree.cpp
   Pointcloud.cpp
   ScanGraph.cpp
-  CountingOcTree.cpp
+  # CountingOcTree.cpp
   OcTree.cpp
   OcTreeNode.cpp
-  OcTreeStamped.cpp
-  ColorOcTree.cpp
+  # OcTreeStamped.cpp
+  # ColorOcTree.cpp
   GlobalVariables_Cache.cpp
   GlobalVariables_Octomap.cpp
   Param.cpp
@@ -40,7 +40,7 @@ endif()
 export(TARGETS octomap octomap-static
   APPEND FILE "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/octomap/octomap-targets.cmake")
 
-ADD_SUBDIRECTORY( testing )
+# ADD_SUBDIRECTORY( testing )
 
 ADD_EXECUTABLE(graph2tree graph2tree.cpp)
 TARGET_LINK_LIBRARIES(graph2tree octomap)
@@ -57,8 +57,8 @@ TARGET_LINK_LIBRARIES(bt2vrml octomap)
 ADD_EXECUTABLE(edit_octree edit_octree.cpp)
 TARGET_LINK_LIBRARIES(edit_octree octomap)
 
-ADD_EXECUTABLE(convert_octree convert_octree.cpp)
-TARGET_LINK_LIBRARIES(convert_octree octomap)
+# ADD_EXECUTABLE(convert_octree convert_octree.cpp)
+# TARGET_LINK_LIBRARIES(convert_octree octomap)
 
 ADD_EXECUTABLE(eval_octree_accuracy eval_octree_accuracy.cpp)
 TARGET_LINK_LIBRARIES(eval_octree_accuracy octomap)
@@ -91,7 +91,7 @@ install(TARGETS
 	binvox2bt
 	bt2vrml
 	edit_octree
-	convert_octree
+	# convert_octree
 	eval_octree_accuracy
 	compare_octrees
 	${INSTALL_TARGETS_DEFAULT_ARGS}

@@ -16,6 +16,16 @@ uint64_t put_time = 0;
 uint64_t kick_time = 0;
 uint64_t insert_time = 0;
 uint64_t raytrace_time = 0;
+uint64_t duplicate_time = 0;
+uint64_t octree_time = 0;
+uint64_t begin_octree = 0;
+bool threadOn = false;
+int countTotal = 0;
+
+namespace octomap {
+	KeySet key_sets[3];
+	int PCcount = 0;
+}
 
 uint32_t big_prime3232[MAX_BIG_PRIME32] = {
 	20177, 20183, 20201, 20219, 20231, 20233, 20249, 20261, 20269, 20287,
@@ -152,7 +162,7 @@ uint32_t prime32[MAX_PRIME32] = {
 };
 
 
-void print_time(std::string s) {
+long long print_time(std::string s) {
     auto currentTime = std::chrono::system_clock::now();
 
     auto duration = currentTime.time_since_epoch();
@@ -160,5 +170,6 @@ void print_time(std::string s) {
 
     long long microsecCount = microseconds.count();
 
-    std::cout << s << ":" << microsecCount << std::endl;
+    // std::cout << s << ":" << microsecCount << std::endl;
+	return microsecCount;
 }

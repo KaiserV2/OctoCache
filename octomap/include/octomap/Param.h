@@ -6,9 +6,15 @@
 #include <atomic>
 #include <chrono>
 #include <iostream>
+#include "OcTreeKey.h"
+#include <set>
 
 #define USE_CACHE false
 #define USE_NEW_CACHE true
+#define VECTOR_OCTOMAP false // use vector instead of hash table to store voxels after ray tracing
+#define USE_CQ false // true for using circular queue, false for using vector (not completed)
+
+
 #define DEBUG_API true
 #define ONE_THREAD false // the 1 threaded version of cache
 #define DETAIL_LOG false
@@ -36,6 +42,12 @@ extern uint64_t put_time;
 extern uint64_t kick_time;
 extern uint64_t insert_time;
 extern uint64_t raytrace_time;
+extern uint64_t duplicate_time;
+
+extern uint64_t octree_time;
+extern uint64_t begin_octree;
+extern bool threadOn;
+extern int countTotal;
 
 #define MAX_PRIME32 1229
 #define MAX_BIG_PRIME32 50
@@ -58,6 +70,12 @@ extern uint32_t prime32[MAX_PRIME32];
 }
 
 
-void print_time(std::string s);
+namespace octomap {
+  // a set of OcTreeKey
+  extern KeySet key_sets[3];
+  extern int PCcount;
+}
+
+long long print_time(std::string s);
 
 #endif

@@ -126,11 +126,11 @@ void outputStatistics(const OcTree* tree){
 
 int main(int argc, char** argv) {
   // default values:
-  double res = 0.5;
+  double res = 0.1;
   string datasetname = "fr_079";
   string treeFilename = "output";
-  uint32_t hashMapSize = 1 << 16;
-  uint32_t bound = 10;
+  uint32_t hashMapSize = 1 << 17;
+  uint32_t bound = 4;
   uint32_t maxPCNum = 1;
   uint32_t clockSpeed = 1;
   string ss;
@@ -143,12 +143,7 @@ int main(int argc, char** argv) {
   bool dontTransformNodes = false;
   unsigned char compression = 1;
 
-  // get default sensor model values:
-  OcTree * tree = new OcTree(res);
-  double clampingMin = tree->getClampingThresMin();
-  double clampingMax = tree->getClampingThresMax();
-  double probMiss = tree->getProbMiss();
-  double probHit = tree->getProbHit();
+
 
   // SpecifyThread();
   timeval start; 
@@ -161,24 +156,24 @@ int main(int argc, char** argv) {
       string graphFileNum = std::string(argv[++arg]);
       if (graphFileNum == "1"){
         datasetname = "fr_079";
-        hashMapSize = 1 << 17;
+        // hashMapSize = 1 << 17;
       }
       else if (graphFileNum == "2"){
         datasetname = "fr_campus";
-        hashMapSize = 1 << 22;
+        // hashMapSize = 1 << 22;
       }
       else if (graphFileNum == "3"){
         datasetname = "new_college";
-        hashMapSize = 1 << 13;
+        // hashMapSize = 1 << 13;
       }
       else{ // default
         datasetname = "fr_079";
-        hashMapSize = 1 << 17;
+        // hashMapSize = 1 << 17;
       }
     }
-    else if (!strcmp(argv[arg], "-s")){ // specify the size of the hash table
+    else if (!strcmp(argv[arg], "-s")){ // specify the size of the hash table, in 2 to the power of the argument
       ss = std::string(argv[++arg]);
-      hashMapSize *= stof(ss);
+      hashMapSize = (1 << stoi(ss));
     }
     else if (! strcmp(argv[arg], "-k")){
       sk = std::string(argv[++arg]);
@@ -216,16 +211,16 @@ int main(int argc, char** argv) {
       max_scan_no = atoi(argv[++arg]);
     else if (! strcmp(argv[arg], "-clamping") && (argc-arg < 3))
       printUsage(argv[0]);
-    else if (! strcmp(argv[arg], "-clamping")){
-      clampingMin = atof(argv[++arg]);
-      clampingMax = atof(argv[++arg]);
-    }
+    // else if (! strcmp(argv[arg], "-clamping")){
+    //   clampingMin = atof(argv[++arg]);
+    //   clampingMax = atof(argv[++arg]);
+    // }
     else if (! strcmp(argv[arg], "-sensor") && (argc-arg < 3))
       printUsage(argv[0]);
-    else if (! strcmp(argv[arg], "-sensor")){
-      probMiss = atof(argv[++arg]);
-      probHit = atof(argv[++arg]);
-    }
+    // else if (! strcmp(argv[arg], "-sensor")){
+    //   probMiss = atof(argv[++arg]);
+    //   probHit = atof(argv[++arg]);
+    // }
     else {
       printUsage(argv[0]);
     }
@@ -234,6 +229,14 @@ int main(int argc, char** argv) {
   if (graphFilename == "" || treeFilename == "") {
     printUsage(argv[0]);
   }
+
+
+  // get default sensor model values:
+  OcTree * tree = new OcTree(res);
+  double clampingMin = tree->getClampingThresMin();
+  double clampingMax = tree->getClampingThresMax();
+  double probMiss = tree->getProbMiss();
+  double probHit = tree->getProbHit();
 
   // verify input:
   if (res <= 0.0){
@@ -301,6 +304,7 @@ int main(int argc, char** argv) {
 #if USE_NEW_CACHE
   string filename = "/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/" + datasetname + ".txt";
   std::cout << "Running with Cache" << std::endl;
+  std::cout << "Hash map size " << hashMapSize << std::endl;
   tree->myCache = new Cache(hashMapSize, bound, tree, clockSpeed);
 #else 
   std::cout << "Running without Cache" << std::endl;
@@ -338,16 +342,16 @@ int main(int argc, char** argv) {
     // cout << myCache->myHashMap.itemCount << endl;
     // myCache->myHashMap.itemCount = 0;  
 
-    if (compression == 2){
-      tree->toMaxLikelihood();
-      tree->prune();
-    }
+    // if (compression == 2){
+    //   tree->toMaxLikelihood();
+    //   tree->prune();
+    // }
 
-    if (detailedLog)
-      logfile << currentScan << " " << tree->memoryUsage() << " " << tree->memoryFullGrid() << "\n";
+    // if (detailedLog)
+    //   logfile << currentScan << " " << tree->memoryUsage() << " " << tree->memoryFullGrid() << "\n";
 
-    if ((max_scan_no > 0) && (currentScan == (unsigned int) max_scan_no))
-      break;
+    // if ((max_scan_no > 0) && (currentScan == (unsigned int) max_scan_no))
+    //   break;
     currentScan++;
     // for (int i = 0; i < myCache->myHashMap.TABLE_SIZE; i++) {
     //   fout << myCache->myHashMap.table[i].size() << ",";
@@ -381,14 +385,24 @@ int main(int argc, char** argv) {
 
 
 cout << "octree insertion time " << insert_time << endl;
+cout << "duplicate check time " << duplicate_time << endl;
 cout << "ray tracing time " << raytrace_time << endl;
-
+#if USE_NEW_CACHE
+cout << "cache miss " << fetch_from_octree << endl;
+cout << "thread 2 octree time " << octree_time << endl;
+cout << "countTotal " << countTotal << endl; 
+cout << "kick time " << kick_time << endl;
+#endif
 // #if USE_NEW_CACHE
 //   testMinMax(tree->myCache, tree);
 // #else 
 //   testMinMax(tree);
 // #endif
 
+
+#if USE_NEW_CACHE==false
+  outputStatistics(tree);
+#endif
 
   delete tree;
 

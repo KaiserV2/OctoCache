@@ -16,7 +16,6 @@
 #include "hash/parallel-murmur3.h"
 #include "hash/parallel-xxhash.h"
 
-#define USE_CQ true // true for using circular queue, false for using vector (not completed)
 
 namespace octomap{
 
@@ -122,7 +121,6 @@ public:
 
 
 // Hash map class template
-template <class NODE>
 class HashMap {
 public:
 
@@ -134,12 +132,16 @@ public:
         // construct zero initialized hash table of size
         TABLE_SIZE = _TABLE_SIZE;
         // table = new std::vector<HashNode>[TABLE_SIZE];
-        table = new CircularQueue<OcTreeKey, NODE*>[TABLE_SIZE];
+#if USE_CQ
+        table = new CircularQueue<OcTreeKey, OcTreeNode*>[TABLE_SIZE];
         for (int i = 0; i < TABLE_SIZE; i++) {
             table[i].init(_bound);
         }
-        clockCounters = new uint8_t[TABLE_SIZE];
-        memset(clockCounters, 0, TABLE_SIZE);
+#else
+        table = new std::deque<std::pair<OcTreeKey, OcTreeNode*>>[TABLE_SIZE];
+#endif
+        // clockCounters = new uint8_t[TABLE_SIZE];
+        // memset(clockCounters, 0, TABLE_SIZE);
         currentPointCloud = 0;
         tree = _tree;
         bound = _bound;
@@ -147,7 +149,7 @@ public:
 
     ~HashMap();
 
-    NODE* get(const OcTreeKey &key);
+    OcTreeNode* get(const OcTreeKey &key);
 
     void KickToBuffer(ReaderWriterQueue<std::pair<OcTreeKey,float>>* q, std::atomic_int& bufferSize);
 
@@ -172,11 +174,11 @@ public:
     // hash table
     // std::vector<HashNode> *table;
 #if USE_CQ
-    CircularQueue<OcTreeKey, NODE*> *table;
+    CircularQueue<OcTreeKey, OcTreeNode*> *table;
 #else
-    std::vector<HashNode> *table;
+    std::deque<std::pair<OcTreeKey, OcTreeNode*>> *table;
 #endif
-    uint8_t* clockCounters; // the maximum number of point clouds in the cache is 7 (if >=8, change into a uint16_t...)
+    // uint8_t* clockCounters; // the maximum number of point clouds in the cache is 7 (if >=8, change into a uint16_t...)
     uint32_t TABLE_SIZE;
     OcTree* tree;
     uint32_t currentPointCloud;
