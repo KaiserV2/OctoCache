@@ -8,8 +8,11 @@
 
 namespace octomap{
 
- 
+#if FLOAT_TABLE
+float HashMap::get(const OcTreeKey &key) {
+#else
 OcTreeNode* HashMap::get(const OcTreeKey &key) {
+#endif
     // this function waits to be finished
     // search each bucket after another, stops if found 10 consecutive full buckets
     unsigned long hashValue = MortonHash(key);
@@ -17,7 +20,14 @@ OcTreeNode* HashMap::get(const OcTreeKey &key) {
     int i = table[hashValue].find(key);
     if (i != -1) {
         return table[hashValue].getValue(i);
-    }    
+    }
+#elif FLOAT_TABLE
+    for (auto it = table[hashValue].begin(); it != table[hashValue].end(); it++) {
+        if (it->first == key) {
+            return it->second;
+        }
+    }
+    return IMPOSSIBLE;
 #else
     for (auto it = table[hashValue].begin(); it != table[hashValue].end(); it++) {
         if (it->first == key) {
@@ -57,9 +67,15 @@ void HashMap::KickToBuffer(ReaderWriterQueue<std::pair<OcTreeKey,float>>* q, std
         if (table[i].size() > bound) {
             // kick from the front to the back, until the size is smaller than the bound
             while (table[i].size() > bound) {
+#if FLOAT_TABLE
+                q->enqueue(std::make_pair(table[i].front().first, table[i].front().second));
+#else
                 q->enqueue(std::make_pair(table[i].front().first, table[i].front().second->getLogOdds()));
+#endif
                 bufferSize++;
+#if FLOAT_TABLE==false
                 delete table[i].front().second;
+#endif
                 // table[i].front().second = nullptr;
                 table[i].pop_front();
             }
@@ -92,22 +108,37 @@ void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashV
             return;
         }
     }
+#elif FLOAT_TABLE
+    for (auto it = table[hashValue].begin(); it != table[hashValue].end(); it++) {
+        if (it->first == key){
+            // std::cout << "found" << std::endl;
+            if (value == true) {
+                it->second=(std::min(it->second + probHitLog, clampingMax));
+                return;
+            }
+            else {
+                it->second=(std::max(it->second + probMissLog, clampingMin));
+                return;
+            }
+        }
+    }
 #else
     for (auto it = table[hashValue].begin(); it != table[hashValue].end(); it++) {
         if (it->first == key){
             // std::cout << "found" << std::endl;
             if (value == true) {
-                it->second->setLogOdds(std::min(it->second->getLogOdds() + tree->getProbHitLog(), tree->getClampingThresMaxLog()));
+                it->second->setLogOdds(std::min(it->second->getLogOdds() + probHitLog, clampingMax));
                 return;
             }
             else {
-                it->second->setLogOdds(std::max(it->second->getLogOdds() + tree->getProbMissLog(), tree->getClampingThresMinLog()));
+                it->second->setLogOdds(std::max(it->second->getLogOdds() + probMissLog, clampingMin));
                 return;
             }
         }
     }
 #endif
     // this node does not exist
+    // auto start_time = print_time("");
     double accumulateOccupancy = 0.0;
     auto node = tree->search(key);
     fetch_from_octree++;
@@ -115,15 +146,15 @@ void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashV
         accumulateOccupancy = node->getLogOdds();
     }
     if (value == true) {
-        accumulateOccupancy += tree->getProbHitLog();
-        if (accumulateOccupancy > tree->getClampingThresMaxLog()) {
-            accumulateOccupancy = tree->getClampingThresMaxLog();
+        accumulateOccupancy += probHitLog;
+        if (accumulateOccupancy > clampingMax) {
+            accumulateOccupancy = clampingMax;
         }
     }
     else {
-        accumulateOccupancy += tree->getProbMissLog();
-        if (accumulateOccupancy < tree->getClampingThresMinLog()) {
-            accumulateOccupancy = tree->getClampingThresMinLog();
+        accumulateOccupancy += probMissLog;
+        if (accumulateOccupancy < clampingMin) {
+            accumulateOccupancy = clampingMin;
         }
     }
 #if USE_CQ
@@ -135,11 +166,15 @@ void HashMap::put(const OcTreeKey &key, const bool &value, const uint32_t& hashV
     OcTreeNode* newNode = new OcTreeNode();
     newNode->setLogOdds(accumulateOccupancy);
     table[hashValue].push(key, newNode);
+#elif FLOAT_TABLE
+    table[hashValue].push_back(std::make_pair(key, accumulateOccupancy));
 #else
     OcTreeNode* newNode = new OcTreeNode();
     newNode->setLogOdds(accumulateOccupancy);
     table[hashValue].push_back(std::make_pair(key, newNode));
 #endif
+    // auto end_time = print_time("");
+    // cachemiss_time += (end_time - start_time);
 }
 
  

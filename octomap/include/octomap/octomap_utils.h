@@ -35,6 +35,7 @@
 #define OCTOMAP_UTILS_H_
 
 #include <math.h>
+#include <iostream>
 
 namespace octomap{
 
@@ -45,6 +46,7 @@ namespace octomap{
 
   /// compute probability from logodds:
   inline double probability(double logodds){
+    // std::cout << "probability input " << logodds << ", output " << 1. - ( 1. / (1. + exp(logodds))) << std::endl;
     return 1. - ( 1. / (1. + exp(logodds)));
 
   }

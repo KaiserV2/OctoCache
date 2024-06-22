@@ -50,6 +50,13 @@ namespace octomap {
   class AbstractOcTree {
     friend class StaticMapInit;
   public:
+
+    uint32_t free_nodeupdate = 0;
+    uint32_t occupied_nodeupdate = 0;
+
+    uint32_t free_nodeupdate_nonduplicate = 0;
+    uint32_t occupied_nodeupdate_nonduplicate = 0;
+
     AbstractOcTree();
     virtual ~AbstractOcTree() {};
 

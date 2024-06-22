@@ -10,6 +10,8 @@ uint32_t fetch_from_octree = 0;
 uint32_t insert_to_hashmap = 0;
 uint32_t insert_to_buffer = 0;
 uint32_t original_nodeupdate = 0;
+uint32_t free_nodeupdate=0;
+uint32_t occupied_nodeupdate=0;
 
 uint64_t hash_time = 0;
 uint64_t put_time = 0;
@@ -19,8 +21,11 @@ uint64_t raytrace_time = 0;
 uint64_t duplicate_time = 0;
 uint64_t octree_time = 0;
 uint64_t begin_octree = 0;
+uint64_t cachemiss_time = 0;
 bool threadOn = false;
 int countTotal = 0;
+
+std::fstream fout;
 
 namespace octomap {
 	KeySet key_sets[3];

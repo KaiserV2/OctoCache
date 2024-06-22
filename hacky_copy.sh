@@ -1,11 +1,11 @@
-sudo ln -sf /home/octomap/lib/liboctomath.so.1.9 /usr/local/lib/liboctomath.so
-sudo ln -sf /home/octomap/lib/liboctomap.so.1.9 /usr/local/lib/liboctomap.so
+sudo ln -sf /home/octomap/octomap/lib/liboctomath.so.1.9 /usr/local/lib/liboctomath.so
+sudo ln -sf /home/octomap/octomap/lib/liboctomap.so.1.9 /usr/local/lib/liboctomap.so
                                                                                 
-sudo ln -sf /home/octomap/lib/liboctomath.so.1.9 /opt/ros/kinetic/lib/liboctomath.so
-sudo ln -sf /home/octomap/lib/liboctomap.so.1.9 /opt/ros/kinetic/lib/liboctomap.so
+sudo ln -sf /home/octomap/octomap/lib/liboctomath.so.1.9 /opt/ros/kinetic/lib/liboctomath.so
+sudo ln -sf /home/octomap/octomap/lib/liboctomap.so.1.9 /opt/ros/kinetic/lib/liboctomap.so
 
-sudo ln -sf /home/octomap/lib/liboctomath.so.1.9 /usr/local/lib/liboctomath.so.1.9
-sudo ln -sf /home/octomap/lib/liboctomap.so.1.9 /usr/local/lib/liboctomap.so.1.9
+sudo ln -sf /home/octomap/octomap/lib/liboctomath.so.1.9 /usr/local/lib/liboctomath.so.1.9
+sudo ln -sf /home/octomap/octomap/lib/liboctomap.so.1.9 /usr/local/lib/liboctomap.so.1.9
                                                                                 
 SELF_PREFIX=/home/octomap/octomap/include/octomap                    
 ROS_PREFIX=/opt/ros/kinetic/include/octomap                                     

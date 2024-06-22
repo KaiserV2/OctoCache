@@ -40,8 +40,8 @@ namespace octomap {
   AbstractOccupancyOcTree::AbstractOccupancyOcTree(){
     // some sane default values:
     setOccupancyThres(0.5);   // = 0.0 in logodds
-    setProbHit(0.7);          // = 0.85 in logodds
-    setProbMiss(0.4);         // = -0.4 in logodds
+    setProbHit(0.7);          // = 0.85 in logodds default value is 0.7, worst value 0.51
+    setProbMiss(0.4);         // = -0.4 in logodds default value is 0.4, worst value 0.498
 
     setClampingThresMin(0.1192); // = -2 in log odds
     setClampingThresMax(0.971); // = 3.5 in log odds

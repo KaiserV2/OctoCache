@@ -128,7 +128,7 @@ public:
 
     }
 
-    void init(uint32_t _TABLE_SIZE, uint32_t _bound, OcTree* _tree) {
+    void init(uint32_t _TABLE_SIZE, uint32_t _bound, OcTree* _tree, float _probHitLog, float _probMissLog, float _clampingMin, float _clampingMax) {
         // construct zero initialized hash table of size
         TABLE_SIZE = _TABLE_SIZE;
         // table = new std::vector<HashNode>[TABLE_SIZE];
@@ -137,6 +137,8 @@ public:
         for (int i = 0; i < TABLE_SIZE; i++) {
             table[i].init(_bound);
         }
+#elif FLOAT_TABLE
+        table = new std::deque<std::pair<OcTreeKey, float>>[TABLE_SIZE];
 #else
         table = new std::deque<std::pair<OcTreeKey, OcTreeNode*>>[TABLE_SIZE];
 #endif
@@ -145,11 +147,19 @@ public:
         currentPointCloud = 0;
         tree = _tree;
         bound = _bound;
+        probHitLog = _probHitLog;
+        probMissLog = _probMissLog;
+        clampingMin = _clampingMin;
+        clampingMax = _clampingMax;
     }
 
     ~HashMap();
 
+#if FLOAT_TABLE
+    float get(const OcTreeKey &key);
+#else
     OcTreeNode* get(const OcTreeKey &key);
+#endif
 
     void KickToBuffer(ReaderWriterQueue<std::pair<OcTreeKey,float>>* q, std::atomic_int& bufferSize);
 
@@ -175,6 +185,8 @@ public:
     // std::vector<HashNode> *table;
 #if USE_CQ
     CircularQueue<OcTreeKey, OcTreeNode*> *table;
+#elif FLOAT_TABLE
+    std::deque<std::pair<OcTreeKey, float>> *table;
 #else
     std::deque<std::pair<OcTreeKey, OcTreeNode*>> *table;
 #endif
@@ -183,6 +195,11 @@ public:
     OcTree* tree;
     uint32_t currentPointCloud;
     uint32_t bound = 12;
+    float probHitLog;
+    float probMissLog;
+    float clampingMin;
+    float clampingMax;
+    float IMPOSSIBLE = -100;
 };
 
 }

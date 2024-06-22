@@ -32,14 +32,14 @@ namespace octomap{
 #endif
 
  
-    Cache::Cache(uint32_t _tableSize, uint32_t _tableWidth, OcTree* _tree, uint32_t _clockWait) {
+    Cache::Cache(uint32_t _tableSize, uint32_t _tableWidth, OcTree* _tree, float probHit, float probMiss, float probMin, float probMax) {
         std::cout << "Initializing cache" << std::endl;
-        myHashMap.init(_tableSize, _tableWidth, _tree);
+        myHashMap.init(_tableSize, _tableWidth, _tree, probHit, probMiss, probMin, probMax);
         bufferSize = 0;
         insert_to_octree = 0;
         tree = _tree;
         pktCount = 0; // here pkt count means the number of "duplicated insertions"
-        clockWait = _clockWait; // make it 2^n, the default is 90k / 7k
+        // clockWait = _clockWait; // make it 2^n, the default is 90k / 7k
         runThread = true;
         // fout.open(file);
         inOutRatio = 0.0;
@@ -174,6 +174,18 @@ namespace octomap{
 
  
     OcTreeNode* Cache::search(const OcTreeKey &key, unsigned int depth) {
+#if FLOAT_TABLE
+        float value = myHashMap.get(key);
+        if (value != myHashMap.IMPOSSIBLE) {
+            OcTreeNode* newNode = new OcTreeNode();
+            newNode->from_cache = true;
+            newNode->setLogOdds(value);
+            return newNode;
+        }
+        else {
+            return tree->search(key, depth);
+        }
+#else
         OcTreeNode* node = myHashMap.get(key);
         if (node != NULL) {
             return node;
@@ -181,6 +193,7 @@ namespace octomap{
         else {
             return tree->search(key, depth);
         }
+#endif
     }
 
  

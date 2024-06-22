@@ -108,6 +108,8 @@ void calcThresholdedNodes(const OcTree* tree,
 }
 
 void outputStatistics(const OcTree* tree){
+  cout << "updated " << tree->free_nodeupdate << " free nodes and " << tree->occupied_nodeupdate << " occupied nodes in total"<< endl;
+  cout << "After duplication check " << tree->free_nodeupdate_nonduplicate << " free nodes and " << tree->occupied_nodeupdate_nonduplicate << " occupied nodes in total"<< endl;
   unsigned int numThresholded, numOther;
   calcThresholdedNodes(tree, numThresholded, numOther);
   size_t memUsage = tree->memoryUsage();
@@ -122,6 +124,37 @@ void outputStatistics(const OcTree* tree){
   cout << "Size: " << x << " x " << y << " x " << z << " m^3\n";
   cout << endl;
 }
+
+
+
+double anti_logodds(std::string graphFileNum, double res) {
+  // std::cout << graphFileNum << " " << res << std::endl;
+  double vector[3][10] = {
+        {190269636, 95174948, 63407874, 48602786, 39420787, 32113670, 26476522, 23648056, 21868626, 19993880},
+        {2021969858, 1010910075, 674030446, 505314906, 404694728, 336725848, 288586595, 252998632, 225751805, 203461026},
+        {869169653, 434449089, 289743614, 216973228, 173753738, 144955900, 123933209, 108414347, 96425048, 87020910}
+  };
+  double hashmap[3][10] = {
+      {6265381, 1065594, 375707, 179800, 105579, 68635, 44801, 35168, 27676, 21756},
+      {209517634, 36039147, 12432558, 5868615, 3315410, 2077252, 1414051, 1027382, 775053, 598632},
+      {317490870, 95988739, 46752259, 28275147, 19271885, 14159335, 10961524, 8809955, 7293382, 6162334}
+  };
+
+  // convert graphFileNum to an int
+  int x = std::stoi(graphFileNum);
+  int y = res * 10;
+
+  // std::cout << x << " " << y << std::endl;
+  // double multi = vector[x - 1][y - 1] / hashmap[x - 1][y - 1];
+  double multi = (y + 1 - res * 10) * vector[x - 1][y - 1] / hashmap[x - 1][y - 1] + (res * 10 - y) * vector[x - 1][y] / hashmap[x - 1][y];
+
+  std::cout << "Decrease ProbMiss by " << multi << std::endl;
+  double probmiss = - 0.4 / multi;
+  // calculate e^probmiss / (1 + e^probmiss)
+  double ans = exp(probmiss) / (1 + exp(probmiss));
+  return ans;
+}
+
 
 
 int main(int argc, char** argv) {
@@ -144,16 +177,16 @@ int main(int argc, char** argv) {
   unsigned char compression = 1;
 
 
-
   // SpecifyThread();
   timeval start; 
   timeval stop;
   timeval stop1;  
 
   int arg = 0;
+  string graphFileNum = "1";
   while (++arg < argc) {
     if (! strcmp(argv[arg], "-i")){
-      string graphFileNum = std::string(argv[++arg]);
+      graphFileNum = std::string(argv[++arg]);
       if (graphFileNum == "1"){
         datasetname = "fr_079";
         // hashMapSize = 1 << 17;
@@ -230,13 +263,15 @@ int main(int argc, char** argv) {
     printUsage(argv[0]);
   }
 
-
   // get default sensor model values:
   OcTree * tree = new OcTree(res);
-  double clampingMin = tree->getClampingThresMin();
-  double clampingMax = tree->getClampingThresMax();
-  double probMiss = tree->getProbMiss();
-  double probHit = tree->getProbHit();
+  float clampingMin = tree->getClampingThresMin();
+  float clampingMax = tree->getClampingThresMax();
+  float probMiss = tree->getProbMiss();
+  float probHit = tree->getProbHit();
+
+  
+  
 
   // verify input:
   if (res <= 0.0){
@@ -303,12 +338,17 @@ int main(int argc, char** argv) {
   
 #if USE_NEW_CACHE
   string filename = "/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/" + datasetname + ".txt";
+  std::cout << "dataset " << graphFileNum << std::endl;
   std::cout << "Running with Cache" << std::endl;
-  std::cout << "Hash map size " << hashMapSize << std::endl;
-  tree->myCache = new Cache(hashMapSize, bound, tree, clockSpeed);
+  std::cout << "Hash map size " << log2(hashMapSize) << std::endl;
+  std::cout << "resolution " << res << std::endl;
+  tree->myCache = new Cache(hashMapSize, bound, tree, logodds(probHit), logodds(probMiss), logodds(clampingMin), logodds(clampingMax));
 #else 
   std::cout << "Running without Cache" << std::endl;
 #endif
+
+  probMiss = anti_logodds(graphFileNum, res);
+  std::cout << "clampingMin " << clampingMin << " clampingMax " << clampingMax << " probMiss " << probMiss << " probHit " << probHit << std::endl;
 
   tree->setClampingThresMin(clampingMin);
   tree->setClampingThresMax(clampingMax);
@@ -324,16 +364,16 @@ int main(int argc, char** argv) {
   // uint64_t point1 = __rdtsc();
   size_t numScans = graph->size();
   size_t currentScan = 1;
-  fstream fout;
-  fout.open("/proj/softmeasure-PG0/Peiqing/Test/distribution.txt");
+  // fout.open("/home/tmp/octomap/voxel_order/" + datasetname + std::to_string(res) + ".txt", std::ios::out | std::ios::trunc);
   gettimeofday(&start, NULL);  // start timer
   for (ScanGraph::iterator scan_it = graph->begin(); scan_it != graph->end(); scan_it++) {
-    if (max_scan_no > 0) cout << "("<<currentScan << "/" << max_scan_no << ") " << flush;
+    if ((graphFileNum=="2")) cout << "("<<currentScan << "/" << numScans << ") " << flush;
     // else cout << "("<<currentScan << "/" << numScans << ") " << flush;
+    // fout << "("<<currentScan << "/" << numScans << ") " << std::endl << flush;
     if (simpleUpdate)
       tree->insertPointCloudRays((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange);
     else{
-#if USE_CACHE | USE_NEW_CACHE
+#if USE_NEW_CACHE
       tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), tree->myCache, maxrange, false, discretize);
 #else
       tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange, false, discretize);
@@ -351,7 +391,7 @@ int main(int argc, char** argv) {
     //   logfile << currentScan << " " << tree->memoryUsage() << " " << tree->memoryFullGrid() << "\n";
 
     // if ((max_scan_no > 0) && (currentScan == (unsigned int) max_scan_no))
-    //   break;
+      // break;
     currentScan++;
     // for (int i = 0; i < myCache->myHashMap.TABLE_SIZE; i++) {
     //   fout << myCache->myHashMap.table[i].size() << ",";
@@ -376,8 +416,6 @@ int main(int argc, char** argv) {
 
   // fout.open("log.txt", std::ios_base::app);
   // fout << time_to_insert << ",";
-
-  cout << "updated " << original_nodeupdate << " nodes in total"<< endl;
   // get rid of graph in mem before doing anything fancy with tree (=> memory)
   delete graph;
   if (logfile.is_open())
@@ -390,7 +428,7 @@ cout << "ray tracing time " << raytrace_time << endl;
 #if USE_NEW_CACHE
 cout << "cache miss " << fetch_from_octree << endl;
 cout << "thread 2 octree time " << octree_time << endl;
-cout << "countTotal " << countTotal << endl; 
+// cout << "countTotal " << countTotal << endl; 
 cout << "kick time " << kick_time << endl;
 #endif
 // #if USE_NEW_CACHE

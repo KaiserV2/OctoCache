@@ -55,6 +55,8 @@ namespace octomap {
   class OcTreeNode : public OcTreeDataNode<float> {
 
   public:
+
+    bool from_cache = false;
     OcTreeNode();
     ~OcTreeNode();
 

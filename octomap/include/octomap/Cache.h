@@ -36,7 +36,7 @@ public:
     uint32_t bound;
     // function to feed items in the buffer to the octree
 
-    Cache(uint32_t _tableSize, uint32_t _tableWidth, OcTree* _tree, uint32_t _clockWait);
+    Cache(uint32_t _tableSize, uint32_t _tableWidth, OcTree* _tree, float probHit, float probMiss, float probMin, float probMax);
     ~Cache() {
         print_time("end");
         this->EndThread();
