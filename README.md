@@ -1,4 +1,4 @@
-OctoMap - An Efficient Probabilistic 3D Mapping Framework Based on Octrees.
+OctoCache: Caching Voxels for Accelerating 3D Occupancy Mapping in Autonomous Systems
 ===========================================================================
 
 http://octomap.github.io
