@@ -1,30 +1,11 @@
 OctoCache: Caching Voxels for Accelerating 3D Occupancy Mapping in Autonomous Systems
 ===========================================================================
 
-http://octomap.github.io
+OctoCache is a software cached system to accelerate the popular mapping system Octomap. The paper is submitted to ASPLOS 2025.
 
-Originally developed by Kai M. Wurm and Armin Hornung, University of Freiburg, Copyright (C) 2009-2014.
-Currently maintained by [Armin Hornung](https://github.com/ahornung).
-See the [list of contributors](octomap/AUTHORS.txt) for further authors.
+To activate OctoCache workflow, go to OctoCache/octomap/include/octomap/Param.h and set #define USE_NEW_CACHE true. On the contrary, setting #define USE_NEW_CACHE false gives the original Octomap workflow.
 
-License: 
-  * octomap: [New BSD License](octomap/LICENSE.txt)
-  * octovis and related libraries: [GPL](octovis/LICENSE.txt)
-
-
-Download the latest releases:
-  https://github.com/octomap/octomap/releases
-
-API documentation:
-  http://octomap.github.com/octomap/doc/
-  
-Build status: 
-  [![Build Status](https://travis-ci.org/OctoMap/octomap.png?branch=devel)](https://travis-ci.org/OctoMap/octomap)
-  
-Report bugs and request features in our tracker:
-  https://github.com/OctoMap/octomap/issues
-
-A list of changes is available in the [octomap changelog](octomap/CHANGELOG.txt)
+Below is the overview of octomap compilation. The compilation instructions remain the same for both Ocotomap and OctoCache.
 
 
 OVERVIEW
