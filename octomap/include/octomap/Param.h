@@ -11,8 +11,8 @@
 #include <fstream>
 
 #define USE_CACHE false
-#define USE_NEW_CACHE false
-#define VECTOR_OCTOMAP true // use vector instead of hash table to store voxels after ray tracing
+#define USE_NEW_CACHE true
+#define VECTOR_OCTOMAP false // use vector instead of hash table to store voxels after ray tracing
 #define USE_CQ false // true for using circular queue, false for using vector
 #define FLOAT_TABLE true // true for using <OcTreeKey, float> for table, false for using <OcTreeKey, OcTreeNode*>
 #define STATISTIC true
