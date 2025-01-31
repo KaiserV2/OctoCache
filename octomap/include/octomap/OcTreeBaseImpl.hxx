@@ -967,7 +967,7 @@ namespace octomap {
 
   template <class NODE,class I>
   void OcTreeBaseImpl<NODE,I>::getMetricMin(double& x, double& y, double& z){
-#if USE_NEW_CACHE
+#if TURN_ON_OCTOCACHE
     if (!min_max_changed) {
       x = 0;
       y = 0;
@@ -988,7 +988,7 @@ namespace octomap {
 
   template <class NODE,class I>
   void OcTreeBaseImpl<NODE,I>::getMetricMax(double& x, double& y, double& z){
-#if USE_NEW_CACHE
+#if TURN_ON_OCTOCACHE
     if (!min_max_changed) {
       x = 0;
       y = 0;

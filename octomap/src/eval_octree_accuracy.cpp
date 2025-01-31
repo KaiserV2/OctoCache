@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
       scan.transform(frame_origin);
       point3d origin = frame_origin.transform(sensor_origin);
 
-#if VECTOR_OCTOMAP
+#if ORIGINAL_OCTOMAP
       std::vector<OcTreeKey> free_cells, occupied_cells;
 #else
       KeySet free_cells, occupied_cells;

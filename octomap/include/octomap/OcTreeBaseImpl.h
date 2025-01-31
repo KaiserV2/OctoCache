@@ -82,7 +82,7 @@ namespace octomap {
     typedef NODE NodeType;
 
     // class Cache<NODE>;
-  #if USE_NEW_CACHE
+  #if TURN_ON_OCTOCACHE
     Cache* myCache;
   #endif
 

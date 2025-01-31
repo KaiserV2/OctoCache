@@ -365,7 +365,7 @@ int main(int argc, char** argv) {
 
   OcTree * tree = new OcTree(res);
   
-#if USE_CACHE | USE_NEW_CACHE
+#if TURN_ON_OCTOCACHE
   string filename = "/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/" + datasetname + ".txt";
   Cache* myCache = new Cache(hashMapSize, tree, filename, clockSpeed);
   tree->myCache = myCache;
@@ -390,7 +390,7 @@ int main(int argc, char** argv) {
     if (simpleUpdate)
       tree->insertPointCloudRays((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange);
     else{
-#if USE_CACHE | USE_NEW_CACHE
+#if TURN_ON_OCTOCACHE
       tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), tree->myCache, maxrange, false, discretize);
 #else
       tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange, false, discretize);
@@ -420,7 +420,7 @@ int main(int argc, char** argv) {
   cout << endl << myCache->bufferSize << endl;
 #endif
 
-#if USE_CACHE | USE_NEW_CACHE
+#if TURN_ON_OCTOCACHE
   tree->myCache->EndThread();
 #endif
 // uint64_t point2 = __rdtsc();
@@ -446,7 +446,7 @@ int main(int argc, char** argv) {
 
 cout << "octree insertion time " << insert_time << endl;
 cout << "ray tracing time " << raytrace_time << endl;
-#if USE_CACHE | USE_NEW_CACHE
+#if TURN_ON_OCTOCACHE
   uint64_t all_time = hash_time + put_time + kick_time;
   double hash_portion = (double)hash_time / (double)all_time;
   double put_portion = (double)put_time / (double)all_time;
@@ -454,7 +454,7 @@ cout << "ray tracing time " << raytrace_time << endl;
   cout << datasetname << " " << hash_time << " " << put_time << " " << kick_time << endl;
 #endif
 
-#if USE_NEW_CACHE
+#if TURN_ON_OCTOCACHE
   testQueries(myCache, tree);
 #else 
   testQueries(tree);

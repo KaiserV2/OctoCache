@@ -48,7 +48,7 @@ namespace octomap {
 
   OcTree::~OcTree() {
     // stop the cache thread
-#if USE_NEW_CACHE
+#if TURN_ON_OCTOCACHE
     delete myCache;
 #endif
   }

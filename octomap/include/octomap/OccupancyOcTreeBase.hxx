@@ -99,7 +99,7 @@ namespace octomap {
   void OccupancyOcTreeBase<NODE>::insertPointCloud(const Pointcloud& scan, const octomap::point3d& sensor_origin, Cache* myCache,
                                              double maxrange, bool lazy_eval, bool discretize) {
 
-#if VECTOR_OCTOMAP
+#if ORIGINAL_OCTOMAP
     std::vector<OcTreeKey> free_cells, occupied_cells;
 #else
     KeySet free_cells, occupied_cells;
@@ -112,7 +112,7 @@ namespace octomap {
     long long point2 = print_time("ray tracing ends");
     raytrace_time += (point2 - point1);
 
-#if USE_NEW_CACHE
+#if TURN_ON_OCTOCACHE
     // insert data into tree  -----------------------
     // myCache->adjust();
     // duplicationCheck(free_cells, occupied_cells);
@@ -194,7 +194,7 @@ namespace octomap {
 
     
 
-#if VECTOR_OCTOMAP
+#if ORIGINAL_OCTOMAP
     std::vector<OcTreeKey> free_cells, occupied_cells;
 #else
     KeySet free_cells, occupied_cells;
@@ -209,7 +209,7 @@ namespace octomap {
 
     long long point2 = print_time("ray tracing ends");
     raytrace_time += (point2 - point1);
-#if VECTOR_OCTOMAP==false
+#if ORIGINAL_OCTOMAP==false
     duplicationCheck(free_cells, occupied_cells);
 #endif
     
@@ -235,7 +235,7 @@ namespace octomap {
     this->free_nodeupdate += free_cells.size();
     this->occupied_nodeupdate += occupied_cells.size();
 
-#if VECTOR_OCTOMAP
+#if ORIGINAL_OCTOMAP
 #if STATISTIC
     // count how many nonduplicate items in free_cells and occupied_cells
     KeySet free_cells_set, occupied_cells_set;
@@ -291,7 +291,7 @@ namespace octomap {
   }
 
   template <class NODE>
-#if VECTOR_OCTOMAP
+#if ORIGINAL_OCTOMAP
   void OccupancyOcTreeBase<NODE>::computeDiscreteUpdate(const Pointcloud& scan, const octomap::point3d& origin,
                                                 std::vector<OcTreeKey>& free_cells, std::vector<OcTreeKey>& occupied_cells,
                                                 double maxrange)
@@ -330,7 +330,7 @@ namespace octomap {
 
   // the original function
   template <class NODE>
-#if VECTOR_OCTOMAP
+#if ORIGINAL_OCTOMAP
   void OccupancyOcTreeBase<NODE>::computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
                                                 std::vector<OcTreeKey>& free_cells, std::vector<OcTreeKey>& occupied_cells,
                                                 double maxrange)
@@ -363,7 +363,7 @@ namespace octomap {
             #pragma omp critical (free_insert)
 #endif
             {
-#if VECTOR_OCTOMAP
+#if ORIGINAL_OCTOMAP
               free_cells.insert(free_cells.end(), keyray->begin(), keyray->end());
 #else
               free_cells.insert(keyray->begin(), keyray->end());
@@ -377,7 +377,7 @@ namespace octomap {
             #pragma omp critical (occupied_insert)
 #endif
             {
-#if VECTOR_OCTOMAP
+#if ORIGINAL_OCTOMAP
               occupied_cells.push_back(key);
 #else
               occupied_cells.insert(key);
@@ -392,7 +392,7 @@ namespace octomap {
             #pragma omp critical (free_insert)
 #endif
             {
-#if VECTOR_OCTOMAP
+#if ORIGINAL_OCTOMAP
               free_cells.insert(free_cells.end(), keyray->begin(), keyray->end());
 #else
               free_cells.insert(keyray->begin(), keyray->end());
@@ -411,7 +411,7 @@ namespace octomap {
             #pragma omp critical (occupied_insert)
 #endif
             {
-#if VECTOR_OCTOMAP
+#if ORIGINAL_OCTOMAP
               occupied_cells.push_back(key);
 #else
               occupied_cells.insert(key);
@@ -427,7 +427,7 @@ namespace octomap {
                 #pragma omp critical (free_insert)
 #endif
                 {
-#if VECTOR_OCTOMAP
+#if ORIGINAL_OCTOMAP
                   free_cells.push_back(*rit);
 #else
                   free_cells.insert(*rit);
@@ -831,7 +831,7 @@ namespace octomap {
       OCTOMAP_WARNING_STR("Coordinates out of bounds during ray casting");
       return false;
     }
-#if USE_NEW_CACHE
+#if TURN_ON_OCTOCACHE
     auto startingNode = this->myCache->search(current_key);
 #else
     auto startingNode = this->search(current_key);
@@ -934,7 +934,7 @@ namespace octomap {
           return false;
 
       }
-#if USE_NEW_CACHE
+#if TURN_ON_OCTOCACHE
       auto currentNode = this->myCache->search(current_key);
 #else
       auto currentNode = this->search(current_key);

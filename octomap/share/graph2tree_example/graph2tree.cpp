@@ -336,7 +336,7 @@ int main(int argc, char** argv) {
 
   
   
-#if USE_NEW_CACHE
+#if TURN_ON_OCTOCACHE
   string filename = "/proj/softmeasure-PG0/Peiqing/Dataset/Octomap/OctreeInsertion/" + datasetname + ".txt";
   std::cout << "dataset " << graphFileNum << std::endl;
   std::cout << "Running with Cache" << std::endl;
@@ -355,7 +355,7 @@ int main(int argc, char** argv) {
   tree->setProbHit(probHit);
   tree->setProbMiss(probMiss);
 
-// #if USE_NEW_CACHE
+// #if TURN_ON_OCTOCACHE
 //   testMinMax(tree->myCache, tree);
 // #else 
 //   testMinMax(tree);
@@ -373,7 +373,7 @@ int main(int argc, char** argv) {
     if (simpleUpdate)
       tree->insertPointCloudRays((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange);
     else{
-#if USE_NEW_CACHE
+#if TURN_ON_OCTOCACHE
       tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), tree->myCache, maxrange, false, discretize);
 #else
       tree->insertPointCloud((*scan_it)->scan, (*scan_it)->pose.trans(), maxrange, false, discretize);
@@ -425,20 +425,20 @@ int main(int argc, char** argv) {
 cout << "octree insertion time " << insert_time << endl;
 cout << "duplicate check time " << duplicate_time << endl;
 cout << "ray tracing time " << raytrace_time << endl;
-#if USE_NEW_CACHE
+#if TURN_ON_OCTOCACHE
 cout << "cache miss " << fetch_from_octree << endl;
 cout << "thread 2 octree time " << octree_time << endl;
 // cout << "countTotal " << countTotal << endl; 
 cout << "kick time " << kick_time << endl;
 #endif
-// #if USE_NEW_CACHE
+// #if TURN_ON_OCTOCACHE
 //   testMinMax(tree->myCache, tree);
 // #else 
 //   testMinMax(tree);
 // #endif
 
 
-#if USE_NEW_CACHE==false
+#if TURN_ON_OCTOCACHE==false
   outputStatistics(tree);
 #endif
 

@@ -390,7 +390,7 @@ namespace octomap {
     void duplicationCheck(KeySet& free_cells, KeySet& occupied_cells);
 
     // the original function
-#if VECTOR_OCTOMAP
+#if ORIGINAL_OCTOMAP
     void computeUpdate(const Pointcloud& scan, const octomap::point3d& origin,
                        std::vector<OcTreeKey>& free_cells,
                        std::vector<OcTreeKey>& occupied_cells,
@@ -414,7 +414,7 @@ namespace octomap {
      * @param occupied_cells keys of nodes to be marked occupied
      * @param maxrange maximum range for raycasting (-1: unlimited)
      */
-#if VECTOR_OCTOMAP
+#if ORIGINAL_OCTOMAP
     void computeDiscreteUpdate(const Pointcloud& scan, const octomap::point3d& origin,
                         std::vector<OcTreeKey>& free_cells, std::vector<OcTreeKey>& occupied_cells,
                         double maxrange);

@@ -39,7 +39,7 @@
 using namespace std;
 using namespace octomap;
 
-// #define USE_NEW_CACHE false
+// #define TURN_ON_OCTOCACHE false
 
 void print_time(std::string s) {
     auto currentTime = std::chrono::system_clock::now();
@@ -71,7 +71,7 @@ int main(int /*argc*/, char** /*argv*/) {
   tree->myCache = new Cache(1<<10, 12, NULL, 1);
   delete tree;
 
-// #if USE_NEW_CACHE
+// #if TURN_ON_OCTOCACHE
 //   tree.myCache = new Cache(1<<10, 12, &tree, 1);
 // #endif
 
@@ -81,7 +81,7 @@ int main(int /*argc*/, char** /*argv*/) {
 //     for (int y=-20; y<20; y++) {
 //       for (int z=-20; z<20; z++) {
 //         point3d endpoint ((float) x*0.05f, (float) y*0.05f, (float) z*0.05f);
-// #if USE_NEW_CACHE
+// #if TURN_ON_OCTOCACHE
 //         OcTreeKey key = tree.coordToKey(endpoint);
 //         tree.myCache->updateNode(key, true); // integrate 'occupied' measurement
 // #else
@@ -97,7 +97,7 @@ int main(int /*argc*/, char** /*argv*/) {
 //     for (int y=-30; y<30; y++) {
 //       for (int z=-30; z<30; z++) {
 //         point3d endpoint ((float) x*0.02f-1.0f, (float) y*0.02f-1.0f, (float) z*0.02f-1.0f);
-// #if USE_NEW_CACHE
+// #if TURN_ON_OCTOCACHE
 //         OcTreeKey key = tree.coordToKey(endpoint);
 //         tree.myCache->updateNode(key, false);  // integrate 'free' measurement
 // #else
